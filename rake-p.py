@@ -7,11 +7,10 @@
 rakefile_array = []
 with open('Rakefile', 'r') as f:
     for line in f:
-        if "#" in line: #skip comments
-            continue
-        rakefile_array.append(line)
-
-
+        split_line = line.split("#", 1)[0]
+        if (split_line != ""):
+            rakefile_array.append(split_line)
+        
 print(rakefile_array)
 
 
