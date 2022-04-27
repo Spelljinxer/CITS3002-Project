@@ -10,25 +10,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#define MAX_LINE_LENGTH 1024
-
 //-------------------------------------------------------------------------
 
 
 void read_rakefile(char *rakefile)
 {
     int c;
-    FILE *fptr;
-
-    if ((fptr = fopen(rakefile, "r")) == NULL)
+    FILE *fptr = fopen(rakefile, "r");
+    char buf[1024];
+    
+    if(fptr == NULL) //simple check
     {
-        printf("Error reading file\n");
+        printf("Error opening file\n");
+        exit(1);
     }
-    else
+
+    if (fgets(buf, sizeof buf, fptr))
     {
-        while ((c = getc(fptr)) != EOF)
+        char *delim = strstr(buf, "#"); 
+        if (delim)
         {
-            printf("%c", c);
+            *delim = '\0'; //ignore the "#" comments in rakefile
+        }
+        printf("%s\n", buf);
+        while ((c = getc(fptr)) != EOF)  
+        {
+            printf("%c", c); 
         }
         fclose(fptr);
     }
@@ -37,7 +44,7 @@ void read_rakefile(char *rakefile)
 
 int main(int argc, char* argv[])
 {
-    read_rakefile(argv[1]);
+    read_rakefile(argv[1]); //  "./rake-c Rakefile"
     return 0;
 }
 
