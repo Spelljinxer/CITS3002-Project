@@ -14,7 +14,7 @@
 
 //-------------------------------------------------------------------------
 
-char (*lines)[BUFFSIZE] = NULL; /* pointer to array of type char [MAXC] */
+char (*lines)[BUFFSIZE] = NULL; 
 
 void read_rakefile(char *rakefile)
 {
@@ -22,7 +22,7 @@ void read_rakefile(char *rakefile)
     
     int i, n = 0;
     int sizecheck = BUFFSIZE;
-
+    
     if(fptr == NULL) //simple check
     {
         printf("Error opening file\n");
@@ -39,7 +39,7 @@ void read_rakefile(char *rakefile)
         char *p = lines[n];                  /* assign pointer */
         for (; *p && *p != '\n'; p++) {}     /* find 1st '\n'  */
         *p = 0, n++;                         /* nul-termiante  */
-        if(++n == sizecheck)  // ATTEMPTS DYNAMIC REALLOCATION IF WE HAVE REACHED THE END OF THE BUFFER
+        if(n == sizecheck)  // ATTEMPTS DYNAMIC REALLOCATION IF WE HAVE REACHED THE END OF THE BUFFER
         {
             void *tmp = realloc (lines, 2 * BUFFSIZE * sizeof *lines);
             if(tmp == NULL)
@@ -47,18 +47,15 @@ void read_rakefile(char *rakefile)
                 fprintf (stderr, "error: virtual memory exhausted 'lines'.\n");
                 break;
             }
-            lines = tmp;
             sizecheck *= 2;
         }
-            
     }
-    if (fptr != stdin) fclose (fptr);   /* close file if not stdin */
+    
+    fclose (fptr);   /* close file if not stdin */
 
-    /* print lines */
-    for (i = 0; i < n; i++) printf (" line[%2d] : %s\n", i + 1, lines[i]);
+    for (i = 0; i < n; i++) printf ("line[%2d] : %s\n", i + 1, lines[i]);
 
     free (lines);   /* free allocated memory */
-
 }
 
 
