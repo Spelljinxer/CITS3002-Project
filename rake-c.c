@@ -10,35 +10,27 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define BUFFSIZE 1024
+
 //-------------------------------------------------------------------------
 
 
 void read_rakefile(char *rakefile)
 {
-    int c;
     FILE *fptr = fopen(rakefile, "r");
-    char buf[1024];
+    char buf[BUFFSIZE];
     
     if(fptr == NULL) //simple check
     {
         printf("Error opening file\n");
         exit(1);
     }
-
-    if (fgets(buf, sizeof buf, fptr))
-    {
-        char *delim = strstr(buf, "#"); 
-        if (delim)
-        {
-            *delim = '\0'; //ignore the "#" comments in rakefile
-        }
-        printf("%s\n", buf);
-        while ((c = getc(fptr)) != EOF)  
-        {
-            printf("%c", c); 
-        }
-        fclose(fptr);
+    // https://stackoverflow.com/questions/56226129/how-to-skip-a-comment-in-c-programming-with-using-fopen
+    while (fgets (buf, BUFFSIZE, fptr)) {   /* read every line */
+        buf[strcspn (buf, "#\r\n")] = 0;  /* trim comment or line-ending */
+        puts (buf);                      /* output line w/o comment - replace this later when we add it to a DS */
     }
+    if (fptr != stdin) fclose (fptr);
 }
 
 
