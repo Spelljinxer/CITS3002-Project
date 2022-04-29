@@ -14,23 +14,38 @@
 
 //-------------------------------------------------------------------------
 
+char (*lines)[BUFFSIZE] = NULL; /* pointer to array of type char [MAXC] */
 
 void read_rakefile(char *rakefile)
 {
     FILE *fptr = fopen(rakefile, "r");
-    char buf[BUFFSIZE];
     
+    int i, n = 0;
+
     if(fptr == NULL) //simple check
     {
         printf("Error opening file\n");
         exit(1);
     }
-    // https://stackoverflow.com/questions/56226129/how-to-skip-a-comment-in-c-programming-with-using-fopen
-    while (fgets (buf, BUFFSIZE, fptr)) {   /* read every line */
-        buf[strcspn (buf, "#\r\n")] = 0;  /* trim comment or line-ending */
-        puts (buf);                      /* output line w/o comment - replace this later when we add it to a DS */
+    
+    if (!(lines = malloc (BUFFSIZE * sizeof *lines))) { /* allocate MAXL arrays */
+        fprintf (stderr, "error: virtual memory exhausted 'lines'.\n");
+        exit(1);
     }
-    if (fptr != stdin) fclose (fptr);
+
+    while (n < BUFFSIZE && fgets (lines[n], BUFFSIZE, fptr)) { /* read each line */
+        lines[n][strcspn (lines[n], "#\r\n")] = 0; /* trim comment or line-ending */
+        char *p = lines[n];                  /* assign pointer */
+        for (; *p && *p != '\n'; p++) {}     /* find 1st '\n'  */
+        *p = 0, n++;                         /* nul-termiante  */
+    }
+    if (fptr != stdin) fclose (fptr);   /* close file if not stdin */
+
+    /* print lines */
+    for (i = 0; i < n; i++) printf (" line[%2d] : %s\n", i + 1, lines[i]);
+
+    free (lines);   /* free allocated memory */
+
 }
 
 
@@ -39,4 +54,3 @@ int main(int argc, char* argv[])
     read_rakefile(argv[1]); //  "./rake-c Rakefile"
     return 0;
 }
-
