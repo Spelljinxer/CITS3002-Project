@@ -21,6 +21,7 @@ void read_rakefile(char *rakefile)
     FILE *fptr = fopen(rakefile, "r");
     
     int i, n = 0;
+    int sizecheck = BUFFSIZE;
 
     if(fptr == NULL) //simple check
     {
@@ -32,12 +33,24 @@ void read_rakefile(char *rakefile)
         fprintf (stderr, "error: virtual memory exhausted 'lines'.\n");
         exit(1);
     }
-
+    //https://stackoverflow.com/questions/36801833/storing-each-line-of-a-text-file-into-an-array
     while (n < BUFFSIZE && fgets (lines[n], BUFFSIZE, fptr)) { /* read each line */
         lines[n][strcspn (lines[n], "#\r\n")] = 0; /* trim comment or line-ending */
         char *p = lines[n];                  /* assign pointer */
         for (; *p && *p != '\n'; p++) {}     /* find 1st '\n'  */
         *p = 0, n++;                         /* nul-termiante  */
+        if(++n == sizecheck)  // ATTEMPTS DYNAMIC REALLOCATION IF WE HAVE REACHED THE END OF THE BUFFER
+        {
+            void *tmp = realloc (lines, 2 * BUFFSIZE * sizeof *lines);
+            if(tmp == NULL)
+            {
+                fprintf (stderr, "error: virtual memory exhausted 'lines'.\n");
+                break;
+            }
+            lines = tmp;
+            sizecheck *= 2;
+        }
+            
     }
     if (fptr != stdin) fclose (fptr);   /* close file if not stdin */
 
