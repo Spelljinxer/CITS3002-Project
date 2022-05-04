@@ -9,58 +9,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include "strsplit.c"
 
 #define BUFFSIZE 1024
 
 //-------------------------------------------------------------------------
 
-char (*lines)[BUFFSIZE] = NULL; 
+char buffer[BUFFSIZE];
+
 
 void read_rakefile(char *rakefile)
 {
     FILE *fptr = fopen(rakefile, "r");
     
-    int i, n = 0;
-    int sizecheck = BUFFSIZE;
-    
-    if(fptr == NULL) //simple check
+    if (fptr == NULL)
     {
-        printf("Error opening file\n");
+        printf("Error opening file!\n");
         exit(1);
     }
-    
-    if (!(lines = malloc (BUFFSIZE * sizeof *lines))) { /* allocate MAXL arrays */
-        fprintf (stderr, "error: virtual memory exhausted 'lines'.\n");
-        exit(1);
-    }
-    //https://stackoverflow.com/questions/36801833/storing-each-line-of-a-text-file-into-an-array
-    while (n < BUFFSIZE && fgets (lines[n], BUFFSIZE, fptr)) { /* read each line */
-        lines[n][strcspn (lines[n], "#\r\n")] = 0; /* trim comment or line-ending */
-        char *p = lines[n];                  /* assign pointer */
-        for (; *p && *p != '\n'; p++) {}     /* find 1st '\n'  */
-        *p = 0, n++;                         /* nul-termiante  */
-        if(n == sizecheck)  // ATTEMPTS DYNAMIC REALLOCATION IF WE HAVE REACHED THE END OF THE BUFFER
+   
+    int nwords;
+    // https://stackoverflow.com/questions/56226129/how-to-skip-a-comment-in-c-programming-with-using-fopen
+    while (fgets (buffer, BUFFSIZE, fptr)) {   /* read every line */
+        buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
+        //puts (buffer);                      /* output line w/o comment - replace this later when we add it to a DS */
+
+        char **words = strsplit(buffer, &nwords);
+        for(int w=0 ; w<nwords ; ++w) 
         {
-            void *tmp = realloc (lines, 2 * BUFFSIZE * sizeof *lines);
-            if(tmp == NULL)
+            //check if the current word is a tab ident
+            if(words[w][0] == '\v')
             {
-                fprintf (stderr, "error: virtual memory exhausted 'lines'.\n");
-                break;
+                printf("%s\n", words[w]);
             }
-            sizecheck *= 2;
         }
+
     }
-    
-    fclose (fptr);   /* close file if not stdin */
-
-    for (i = 0; i < n; i++) printf ("line[%2d] : %s\n", i + 1, lines[i]);
-
-    free (lines);   /* free allocated memory */
+    fclose(fptr);
 }
-
 
 int main(int argc, char* argv[])
 {
-    read_rakefile(argv[1]); //  "./rake-c Rakefile"
+    read_rakefile(argv[1]); //assuming Rakefile is the next argument
     return 0;
 }
