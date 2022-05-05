@@ -25,6 +25,12 @@ char hosts[][BUFFSIZE] = {};
 char*** actionsets;
 int portnumber;
 
+bool StartsWith(const char *a, const char *b)
+{
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
+}
+
 void read_rakefile(char *rakefile)
 {
     FILE *fptr = fopen(rakefile, "r");
@@ -35,32 +41,40 @@ void read_rakefile(char *rakefile)
         exit(1);
     }
     
+    int setnum = 0;
+    int actionnum = 1;
     int nwords;
     // https://stackoverflow.com/questions/56226129/how-to-skip-a-comment-in-c-programming-with-using-fopen
-    while (fgets (buffer, BUFFSIZE, fptr)) {   /* read every line */
-        buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
-        char **words = strsplit(buffer, &nwords); //split each line based on the spaces
+    while (fgets (buffer, BUFFSIZE, fptr)) 
+    {  
+        buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */       
 
-        for(int w=0 ; w<nwords ; ++w) 
+        if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
         {
-            
-            //retrieve the Port number
-            if(strcmp(words[w], "PORT") == 0)
-            {
-               portnumber = atoi(words[w+2]);
-               printf("port number is %d\n", portnumber);
-            }
-            //place all the hostnames found on that line into the hosts array
-            if(strcmp(words[w], "HOSTS") == 0)
-            {
-                for(int i=0 ; i<nwords - 2; ++i)
-                {
-                    strcpy(hosts[i], words[w+2+i]);
-                }
-            }
+            printf("%s\n", buffer);
         }
-        
 
+        else
+        {
+           if(strstr(buffer, "PORT"))
+           {
+               char **words = strsplit(buffer, &nwords);
+               portnumber = atoi(words[2]);
+           } 
+           else if(strstr(buffer, "HOSTS"))
+           {
+                char **words = strsplit(buffer, &nwords);
+                for(int i = 2; i < nwords; i++)
+                {
+                    strcpy(hosts[i-1], words[i]);
+                }
+           }
+           else if (strstr(buffer, ":"))
+           {
+               setnum++;
+               actionnum = 1;
+           }
+        }
     }
     fclose(fptr);
 }
@@ -70,6 +84,5 @@ void read_rakefile(char *rakefile)
 int main(int argc, char* argv[])
 {
     read_rakefile(argv[1]); //assuming Rakefile is the next argument
-    
     return 0;
 }
