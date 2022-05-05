@@ -13,7 +13,7 @@
 #include "strsplit.c"
 
 
-#define BUFFSIZE 1024
+#define BUFFSIZE 512
 
 //-------------------------------------------------------------------------
 
@@ -21,9 +21,20 @@ char buffer[BUFFSIZE];
 
 //2d Array of strings containing hosts
 char hosts[][BUFFSIZE] = {};
-//3d Array of strings containg the actionsets
-char*** actionsets;
+//cretae a 3d array of strings containing the actions
+char actionsets[BUFFSIZE][BUFFSIZE][BUFFSIZE] = {};
 int portnumber;
+
+struct action{
+    char actionCommand[BUFFSIZE][BUFFSIZE];
+    char requirements[BUFFSIZE][BUFFSIZE];
+};
+
+struct storage {
+    char commandStorage[BUFFSIZE][BUFFSIZE];
+    char requirementsStorage[BUFFSIZE][BUFFSIZE];
+};
+
 
 bool StartsWith(const char *a, const char *b)
 {
@@ -31,8 +42,7 @@ bool StartsWith(const char *a, const char *b)
    return 0;
 }
 
-void read_rakefile(char *rakefile)
-{
+void read_rakefile(char *rakefile, struct action *action, struct storage *storage) { 
     FILE *fptr = fopen(rakefile, "r");
     
     if (fptr == NULL)
@@ -41,17 +51,33 @@ void read_rakefile(char *rakefile)
         exit(1);
     }
     
-    int setnum = 0;
-    int actionnum = 1;
+    int setnum = -1;
+    int actionnum = -1;
     int nwords;
-    // https://stackoverflow.com/questions/56226129/how-to-skip-a-comment-in-c-programming-with-using-fopen
     while (fgets (buffer, BUFFSIZE, fptr)) 
     {  
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */       
 
         if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
         {
-            printf("%s\n", buffer);
+            
+            if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
+            {
+                char** words = strsplit(buffer, &nwords);
+                for(int i = 1; i < nwords; i++)
+                {
+                    strcpy(action->requirements[i], strcat(words[i], " "));
+                    strcpy(storage->requirementsStorage[setnum], action->requirements[i]);
+                    strcat(actionsets[setnum][actionnum-1], action->requirements[i]);
+                }
+            }
+            else
+            {
+                strcpy(action->actionCommand[setnum], buffer);
+                strcpy(storage->commandStorage[setnum], action->actionCommand[setnum]);
+                strcpy(actionsets[setnum][actionnum], strcat(action->actionCommand[setnum], " "));
+                actionnum++;
+            }
         }
 
         else
@@ -72,7 +98,7 @@ void read_rakefile(char *rakefile)
            else if (strstr(buffer, ":"))
            {
                setnum++;
-               actionnum = 1;
+               actionnum = 0;
            }
         }
     }
@@ -83,6 +109,25 @@ void read_rakefile(char *rakefile)
 
 int main(int argc, char* argv[])
 {
-    read_rakefile(argv[1]); //assuming Rakefile is the next argument
+    struct action *action = malloc(sizeof(struct action));
+    struct storage *storage = malloc(sizeof(struct storage));
+
+    read_rakefile(argv[1], action, storage); 
+
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            if(strlen(actionsets[i][j]) > 0)
+            {
+                printf("actionset[%d][%d] is: %s\n", i, j, actionsets[i][j]);
+            }
+        }
+    }
+    for(int i = 0; i < 8; i++)
+    {
+       printf("commandStorage at %d is: %s\n", i, storage->commandStorage[i]);
+    }
+    free(action);
     return 0;
 }
