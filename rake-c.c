@@ -19,20 +19,18 @@
 
 char buffer[BUFFSIZE];
 
-//2d Array of strings containing hosts
 char hosts[][BUFFSIZE] = {};
-//cretae a 3d array of strings containing the actions
 char actionsets[BUFFSIZE][BUFFSIZE][BUFFSIZE] = {};
+
 int portnumber;
 
 struct action{
     char actionCommand[BUFFSIZE][BUFFSIZE];
     char requirements[BUFFSIZE][BUFFSIZE];
-};
 
-struct storage {
     char commandStorage[BUFFSIZE][BUFFSIZE];
-    char requirementsStorage[BUFFSIZE][BUFFSIZE];
+    char requirementStorage[BUFFSIZE][BUFFSIZE][BUFFSIZE];
+
 };
 
 
@@ -42,7 +40,7 @@ bool StartsWith(const char *a, const char *b)
    return 0;
 }
 
-void read_rakefile(char *rakefile, struct action *action, struct storage *storage) { 
+void read_rakefile(char *rakefile, struct action *action, struct action *storage){ 
     FILE *fptr = fopen(rakefile, "r");
     
     if (fptr == NULL)
@@ -54,6 +52,8 @@ void read_rakefile(char *rakefile, struct action *action, struct storage *storag
     int setnum = -1;
     int actionnum = -1;
     int nwords;
+
+    int cmdStorageIndex = 0;
     while (fgets (buffer, BUFFSIZE, fptr)) 
     {  
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */       
@@ -67,14 +67,15 @@ void read_rakefile(char *rakefile, struct action *action, struct storage *storag
                 for(int i = 1; i < nwords; i++)
                 {
                     strcpy(action->requirements[i], strcat(words[i], " "));
-                    strcpy(storage->requirementsStorage[setnum], action->requirements[i]);
+                    strcpy(storage->requirementStorage[setnum][actionnum-1], buffer);
                     strcat(actionsets[setnum][actionnum-1], action->requirements[i]);
                 }
             }
             else
             {
                 strcpy(action->actionCommand[setnum], buffer);
-                strcpy(storage->commandStorage[setnum], action->actionCommand[setnum]);
+                strcpy(storage->commandStorage[cmdStorageIndex], action->actionCommand[setnum]);
+                cmdStorageIndex++;
                 strcpy(actionsets[setnum][actionnum], strcat(action->actionCommand[setnum], " "));
                 actionnum++;
             }
@@ -110,8 +111,7 @@ void read_rakefile(char *rakefile, struct action *action, struct storage *storag
 int main(int argc, char* argv[])
 {
     struct action *action = malloc(sizeof(struct action));
-    struct storage *storage = malloc(sizeof(struct storage));
-
+    struct action *storage = malloc(sizeof(struct action));
     read_rakefile(argv[1], action, storage); 
 
     for(int i = 0; i < 8; i++)
@@ -126,7 +126,21 @@ int main(int argc, char* argv[])
     }
     for(int i = 0; i < 8; i++)
     {
-       printf("commandStorage at %d is: %s\n", i, storage->commandStorage[i]);
+        if(strlen(storage->commandStorage[i]) > 0)
+        {
+            printf("command storage[%d] is: %s\n", i, storage->commandStorage[i]);
+        }
+    }
+
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            if(strlen(storage->requirementStorage[i][j]) > 0)
+            {
+                printf("requirement storage[%d][%d] is: %s\n", i, j, storage->requirementStorage[i][j]);
+            }
+        }
     }
     free(action);
     return 0;
