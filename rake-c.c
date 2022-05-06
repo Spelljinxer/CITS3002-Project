@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include "strsplit.c"
 
 
@@ -25,12 +26,11 @@ char actionsets[BUFFSIZE][BUFFSIZE][BUFFSIZE] = {};
 int portnumber;
 
 struct action{
-    char actionCommand[BUFFSIZE][BUFFSIZE];
+    char actionCommand[BUFFSIZE];
     char requirements[BUFFSIZE][BUFFSIZE];
 
     char commandStorage[BUFFSIZE][BUFFSIZE];
     char requirementStorage[BUFFSIZE][BUFFSIZE][BUFFSIZE];
-
 };
 
 
@@ -40,7 +40,43 @@ bool StartsWith(const char *a, const char *b)
    return 0;
 }
 
-void read_rakefile(char *rakefile, struct action *action, struct action *storage){ 
+char *trimwhitespace(char *str)
+{
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
+}
+
+char *removeToken(char *buffer) 
+{
+    const char *delimiters = " ,";
+    size_t i, skip;
+
+    skip = strcspn(buffer, delimiters); /* skip the word */
+    skip += strspn(buffer + skip, delimiters); /* skip the delimiters */
+
+    for (i = 0; buffer[skip + i] != '\0'; i++) {
+        buffer[i] = buffer[skip + i];
+    }
+    buffer[i] = '\0';
+
+    return buffer;
+}
+
+void read_rakefile(char *rakefile, struct action *action){ 
     FILE *fptr = fopen(rakefile, "r");
     
     if (fptr == NULL)
@@ -63,20 +99,22 @@ void read_rakefile(char *rakefile, struct action *action, struct action *storage
             
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
-                char** words = strsplit(buffer, &nwords);
-                for(int i = 1; i < nwords; i++)
-                {
-                    strcpy(action->requirements[i], strcat(words[i], " "));
-                    strcpy(storage->requirementStorage[setnum][actionnum-1], buffer);
-                    strcat(actionsets[setnum][actionnum-1], action->requirements[i]);
-                }
+                char *str = strdup(buffer);
+                char *trimmed = trimwhitespace(str);
+                char *word = removeToken(trimmed);
+
+                strcpy(action->requirements[cmdStorageIndex], word);
+                cmdStorageIndex ++;
+                strcat(actionsets[setnum][actionnum-1], word);
             }
             else
             {
-                strcpy(action->actionCommand[setnum], buffer);
-                strcpy(storage->commandStorage[cmdStorageIndex], action->actionCommand[setnum]);
-                cmdStorageIndex++;
-                strcpy(actionsets[setnum][actionnum], strcat(action->actionCommand[setnum], " "));
+                char *trail = " ";
+                char* command = strcpy(action[setnum].actionCommand, buffer);
+                strcat(command, trail);
+                strcpy(actionsets[setnum][actionnum], command);
+                // printf("actiontest at [%d]: %s\n", setnum, action[setnum].actiontest);
+                
                 actionnum++;
             }
         }
@@ -111,34 +149,15 @@ void read_rakefile(char *rakefile, struct action *action, struct action *storage
 int main(int argc, char* argv[])
 {
     struct action *action = malloc(sizeof(struct action));
-    struct action *storage = malloc(sizeof(struct action));
-    read_rakefile(argv[1], action, storage); 
+    read_rakefile(argv[1], action); 
 
-    for(int i = 0; i < 8; i++)
+    for(int i = 0; i < 10; i++)
     {
-        for(int j = 0; j < 8; j++)
+        for(int j = 0; j < 10; j++)
         {
             if(strlen(actionsets[i][j]) > 0)
             {
-                printf("actionset[%d][%d] is: %s\n", i, j, actionsets[i][j]);
-            }
-        }
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        if(strlen(storage->commandStorage[i]) > 0)
-        {
-            printf("command storage[%d] is: %s\n", i, storage->commandStorage[i]);
-        }
-    }
-
-    for(int i = 0; i < 8; i++)
-    {
-        for(int j = 0; j < 8; j++)
-        {
-            if(strlen(storage->requirementStorage[i][j]) > 0)
-            {
-                printf("requirement storage[%d][%d] is: %s\n", i, j, storage->requirementStorage[i][j]);
+                printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j]);
             }
         }
     }
