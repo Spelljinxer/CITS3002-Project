@@ -105,7 +105,7 @@ void read_rakefile(char *rakefile, struct action *action){
 
                 strcpy(action->requirements[cmdStorageIndex], word);
                 cmdStorageIndex ++;
-                strcat(actionsets[setnum][actionnum-1], word);
+                strcat(actionsets[setnum][actionnum-1], word); //WE NEED A WAY TO SEPARATE THEM HERE
             }
             else
             {
