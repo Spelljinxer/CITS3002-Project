@@ -14,7 +14,7 @@
 #include "strsplit.c"
 
 
-#define BUFFSIZE 50
+#define BUFFSIZE 100
 //-------------------------------------------------------------------------
 
 char buffer[BUFFSIZE];
@@ -71,7 +71,7 @@ void read_rakefile(char *rakefile){
     int actionnum = -1;
     int nwords;
 
-    int cmdStorageIndex = 0;
+   
     while (fgets (buffer, BUFFSIZE, fptr))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
@@ -121,13 +121,15 @@ void read_rakefile(char *rakefile){
                 actionnum = 0;
                 
             }
-            total_action_count = actionnum;
             printf("actionnum: %d\n", actionnum);
+            if (actionnum != -1){
+                total_action_count += actionnum;
+            }
+
+            
         }
     }
-    
-    //printf("%d\n", total_action_count);
-
+    printf("total_action_count at: %d\n", total_action_count);
     fclose(fptr);
 }
 
