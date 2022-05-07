@@ -23,16 +23,10 @@ char hosts[][BUFFSIZE] = {};
 
 int portnumber;
 
-//struct action{
-//    char actionCommand[BUFFSIZE];
-//    char requirements[BUFFSIZE][BUFFSIZE];
-//};
-
-//struct action actionsets[BUFFSIZE][BUFFSIZE] = {};
-
 struct {
     char actionCommand[BUFFSIZE];
-    char requirements[BUFFSIZE][BUFFSIZE];
+    char **requirements;
+    int requirementnum;
 } actionsets[BUFFSIZE][BUFFSIZE];
 
 
@@ -101,34 +95,22 @@ void read_rakefile(char *rakefile){
 
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
-                char *str = strdup(buffer);
-                //char *trimmed = trimwhitespace(str);
-                //char *word = removeToken(trimmed);
-
-                //strcpy(action->requirements[cmdStorageIndex], word);
-                //cmdStorageIndex ++;
-                //strcat(actionsets[setnum][actionnum-1], word); //WE NEED A WAY TO SEPARATE THEM HERE
-
                 int nwords;
-                // TODO: could probs replace str with buffer idk lol
-                char **splitreqs = strsplit(str, &nwords);
+                char **splitreqs = strsplit(buffer, &nwords);
+                actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
 
-                // TODO: refactor this later
                 for (int x = 1; x < nwords; x++)
                 {
-                    strcpy(actionsets[setnum][actionnum-1].requirements[x-1],splitreqs[x]);
+                    actionsets[setnum][actionnum-1].requirementnum++;
+                    actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
+                    actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
                 }
             }
             else
             {
-                //char *trail = " ";
-                //char* command = strcpy(action[setnum].actionCommand, buffer);
-                //strcat(command, trail);
-                //strcpy(actionsets[setnum][actionnum], command);
-                // printf("actiontest at [%d]: %s\n", setnum, action[setnum].actiontest);
-
-                //actionsets[setnum][actionnum] = (struct action*)malloc(sizeof(struct action));
+                // TODO: remove tab from start of actioncommand
                 strcpy(actionsets[setnum][actionnum].actionCommand, buffer);
+                actionsets[setnum][actionnum].requirementnum = 0;
                 actionnum++;
             }
         }
@@ -169,11 +151,13 @@ int main(int argc, char* argv[])
         for(int j = 0; j < 10; j++)
         {
             printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
-            for(int z = 0; z < 10; z++)
-            {
-                printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+            if (actionsets[i][j].requirementnum > 0) {
+                for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
+                    printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+                }
             }
         }
+        printf("Port: %d\n",portnumber);
     }
     return 0;
 }
