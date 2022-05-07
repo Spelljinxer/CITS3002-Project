@@ -36,6 +36,27 @@ bool StartsWith(const char *a, const char *b)
     return 0;
 }
 
+char *trimwhitespace(char *str)
+{
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
+}
+
+
 void read_rakefile(char *rakefile){
     FILE *fptr = fopen(rakefile, "r");
 
@@ -72,8 +93,7 @@ void read_rakefile(char *rakefile){
             }
             else
             {
-                // TODO: remove tab from start of actioncommand
-                strcpy(actionsets[setnum][actionnum].actionCommand, buffer);
+                strcpy(actionsets[setnum][actionnum].actionCommand, trimwhitespace(buffer));
                 actionsets[setnum][actionnum].requirementnum = 0;
                 actionnum++;
             }
@@ -110,16 +130,27 @@ int main(int argc, char* argv[])
 {
     read_rakefile(argv[1]);
 
+    // for(int i = 0; i < 10; i++)
+    // {
+    //     for(int j = 0; j < 10; j++)
+    //     {
+    //         //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
+    //         if (actionsets[i][j].requirementnum > 0) {
+    //             for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
+
+    //                 //printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+    //                 printf("actionsets[%d][%d]: %s \n", i, j, &actionsets[i][j].actionCommand);
+    //             }
+    //         }
+    //     }
+    // }
     for(int i = 0; i < 10; i++)
     {
         for(int j = 0; j < 10; j++)
         {
-            //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
-            if (actionsets[i][j].requirementnum > 0) {
-                for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
-
-                    printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
-                }
+            if(strlen(actionsets[i][j].actionCommand) > 0)
+            {
+                printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
             }
         }
     }
