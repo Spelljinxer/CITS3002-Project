@@ -29,6 +29,7 @@ struct {
     int requirementnum;
 } actionsets[BUFFSIZE][BUFFSIZE];
 
+int total_action_count;
 
 bool StartsWith(const char *a, const char *b)
 {
@@ -80,7 +81,7 @@ void read_rakefile(char *rakefile){
 
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
-                int nwords;
+                
                 char **splitreqs = strsplit(buffer, &nwords);
                 actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
 
@@ -98,7 +99,7 @@ void read_rakefile(char *rakefile){
                 actionnum++;
             }
         }
-
+        
         else
         {
             if(strstr(buffer, "PORT"))
@@ -118,9 +119,15 @@ void read_rakefile(char *rakefile){
             {
                 setnum++;
                 actionnum = 0;
+                
             }
+            total_action_count = actionnum;
+            printf("actionnum: %d\n", actionnum);
         }
     }
+    
+    //printf("%d\n", total_action_count);
+
     fclose(fptr);
 }
 
@@ -154,5 +161,7 @@ int main(int argc, char* argv[])
             }
         }
     }
+    // printf("total requirement_num: %d\n", actionsets[0][0].requirementnum);
+    //printf("total_action_count: %d\n", total_action_count);
     return 0;
 }
