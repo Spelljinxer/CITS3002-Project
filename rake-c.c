@@ -14,131 +14,91 @@
 #include "strsplit.c"
 
 
-#define BUFFSIZE 512
-
+#define BUFFSIZE 50
 //-------------------------------------------------------------------------
 
 char buffer[BUFFSIZE];
 
 char hosts[][BUFFSIZE] = {};
-char actionsets[BUFFSIZE][BUFFSIZE][BUFFSIZE] = {};
 
 int portnumber;
 
-struct action{
+struct {
     char actionCommand[BUFFSIZE];
-    char requirements[BUFFSIZE][BUFFSIZE];
-
-    char commandStorage[BUFFSIZE][BUFFSIZE];
-    char requirementStorage[BUFFSIZE][BUFFSIZE][BUFFSIZE];
-};
+    char **requirements;
+    int requirementnum;
+} actionsets[BUFFSIZE][BUFFSIZE];
 
 
 bool StartsWith(const char *a, const char *b)
 {
-   if(strncmp(a, b, strlen(b)) == 0) return 1;
-   return 0;
+    if(strncmp(a, b, strlen(b)) == 0) return 1;
+    return 0;
 }
 
-char *trimwhitespace(char *str)
-{
-  char *end;
-
-  // Trim leading space
-  while(isspace((unsigned char)*str)) str++;
-
-  if(*str == 0)  // All spaces?
-    return str;
-
-  // Trim trailing space
-  end = str + strlen(str) - 1;
-  while(end > str && isspace((unsigned char)*end)) end--;
-
-  // Write new null terminator character
-  end[1] = '\0';
-
-  return str;
-}
-
-char *removeToken(char *buffer) 
-{
-    const char *delimiters = " ,";
-    size_t i, skip;
-
-    skip = strcspn(buffer, delimiters); /* skip the word */
-    skip += strspn(buffer + skip, delimiters); /* skip the delimiters */
-
-    for (i = 0; buffer[skip + i] != '\0'; i++) {
-        buffer[i] = buffer[skip + i];
-    }
-    buffer[i] = '\0';
-
-    return buffer;
-}
-
-void read_rakefile(char *rakefile, struct action *action){ 
+void read_rakefile(char *rakefile){
     FILE *fptr = fopen(rakefile, "r");
-    
+
     if (fptr == NULL)
     {
         printf("Error opening file!\n");
         exit(1);
     }
-    
+
     int setnum = -1;
     int actionnum = -1;
     int nwords;
 
     int cmdStorageIndex = 0;
-    while (fgets (buffer, BUFFSIZE, fptr)) 
-    {  
-        buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */       
+    while (fgets (buffer, BUFFSIZE, fptr))
+    {
+        buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
 
         if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
         {
-            
+
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
-                char *str = strdup(buffer);
-                char *trimmed = trimwhitespace(str);
-                char *word = removeToken(trimmed);
+                int nwords;
+                char **splitreqs = strsplit(buffer, &nwords);
+                actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
 
-                strcpy(action->requirements[cmdStorageIndex], word);
-                cmdStorageIndex ++;
-                strcat(actionsets[setnum][actionnum-1], word); //WE NEED A WAY TO SEPARATE THEM HERE
+                for (int x = 1; x < nwords; x++)
+                {
+                    actionsets[setnum][actionnum-1].requirementnum++;
+                    actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
+                    actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
+                }
             }
             else
             {
-                char *trail = " ";
-                char* command = strcpy(action[setnum].actionCommand, buffer);
-                strcat(command, trail);
-                strcpy(actionsets[setnum][actionnum], command);
-                // printf("actiontest at [%d]: %s\n", setnum, action[setnum].actiontest);
-                
+                // TODO: remove tab from start of actioncommand
+                strcpy(actionsets[setnum][actionnum].actionCommand, buffer);
+                actionsets[setnum][actionnum].requirementnum = 0;
                 actionnum++;
             }
         }
 
         else
         {
-           if(strstr(buffer, "PORT"))
-           {
-               char **words = strsplit(buffer, &nwords);
-               portnumber = atoi(words[2]);
-           } 
-           else if(strstr(buffer, "HOSTS"))
-           {
+            if(strstr(buffer, "PORT"))
+            {
+                char **words = strsplit(buffer, &nwords);
+                portnumber = atoi(words[2]);
+            }
+            else if(strstr(buffer, "HOSTS"))
+            {
                 char **words = strsplit(buffer, &nwords);
                 for(int i = 2; i < nwords; i++)
                 {
                     strcpy(hosts[i-1], words[i]);
                 }
-           }
-           else if (strstr(buffer, ":"))
-           {
-               setnum++;
-               actionnum = 0;
-           }
+            }
+            else if (strstr(buffer, ":"))
+            {
+                setnum++;
+                actionnum = 0;
+            }
         }
     }
     fclose(fptr);
@@ -148,19 +108,20 @@ void read_rakefile(char *rakefile, struct action *action){
 
 int main(int argc, char* argv[])
 {
-    struct action *action = malloc(sizeof(struct action));
-    read_rakefile(argv[1], action); 
+    read_rakefile(argv[1]);
 
     for(int i = 0; i < 10; i++)
     {
         for(int j = 0; j < 10; j++)
         {
-            if(strlen(actionsets[i][j]) > 0)
-            {
-                printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j]);
+            //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
+            if (actionsets[i][j].requirementnum > 0) {
+                for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
+
+                    printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+                }
             }
         }
     }
-    free(action);
     return 0;
 }
