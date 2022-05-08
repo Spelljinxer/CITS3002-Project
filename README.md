@@ -31,5 +31,7 @@ Compilation and execution with Python:
 # Useful Links idk
 [Socket Programming in C](https://www.geeksforgeeks.org/socket-programming-cc/) <br>
 [Socket Programming in Python](https://www.geeksforgeeks.org/socket-programming-python/) <br>
-[TCP in C](https://www.geeksforgeeks.org/tcp-server-client-implementation-in-c/?ref=lbp)
+[TCP in C](https://www.geeksforgeeks.org/tcp-server-client-implementation-in-c/?ref=lbp)[^1]
+
+[^1]: Only useful if we choose to develop rakeserver in C
 
