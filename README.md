@@ -30,5 +30,6 @@ Compilation and execution with Python:
 <!-- Could update this with more links for the future -->
 # Useful Links idk
 [Socket Programming in C](https://www.geeksforgeeks.org/socket-programming-cc/) <br>
-[Socket Programming in Python](https://www.geeksforgeeks.org/socket-programming-python/)
+[Socket Programming in Python](https://www.geeksforgeeks.org/socket-programming-python/) <br>
+[TCP in C](https://www.geeksforgeeks.org/tcp-server-client-implementation-in-c/?ref=lbp)
 
