@@ -26,6 +26,7 @@ Compilation and execution with Python:
 - [ ] Exchange meaningful commands and responses
 - [ ] Execute Simple Actions on rakeserver
 - [ ] Perform Compiliation and Linking
+- [ ] Test two-tabbed lines that are only a comment w/ C and Python.
 
 <!-- Could update this with more links for the future -->
 # Useful Links idk
