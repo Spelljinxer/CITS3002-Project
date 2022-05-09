@@ -4,6 +4,8 @@
 #   - Nathan Eden 22960674
 #   - Reiden Rufin 22986337
 
+from subprocess import Popen, PIPE
+
 port = 0
 hosts = []
 actionsets = []
@@ -13,7 +15,8 @@ with open('Rakefile', 'r') as f:
 
     for line in f:
         line = line.split("#", 1)[0].replace('\n','')
-        if (line != ""):
+        tabbedline = line.replace(chr(9),"")
+        if (line != "" and len(tabbedline) != 0):
             # First check if the line is one-tabbed.
             if (line[0] == chr(9)):
                 # Then check if line is two-tabbed.
@@ -47,3 +50,27 @@ with open('Rakefile', 'r') as f:
 print(port)
 print(hosts)
 print(actionsets)
+
+remote = False
+error = False
+for actionset in actionsets:
+    for action in actionset:
+        curraction = action[0]
+
+        if (action[0][:7] == "remote-"):
+            remote = True
+            curraction = curraction[7:]
+            print("Remotely executing " + action[0][7:])
+        else:
+            print("Executing " + action[0])
+
+        command = Popen(curraction, shell=True, stdout=PIPE)
+        output = command.communicate()[0].decode('UTF-8')
+        if (output != ''): print(output)
+        if (command.returncode == 1):
+            print("An error occurred.")
+            error = True
+
+    if (error):
+        print("Execution prematurely terminated due to error.")
+        break
