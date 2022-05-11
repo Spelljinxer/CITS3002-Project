@@ -25,8 +25,8 @@ Project Description:
 - [x] Parsing Rakefile - Python Client 
 - [x] Parsing Rakefile - C Client
 - [ ] Optimize C Client (realocation of size exceeding)
-- [ ] Start of rakeserver
-- [ ] Rake clients contact rakeserver
+- [x] Start of rakeserver
+- [x] Rake clients contact rakeserver
 - [ ] Support Multiple Instances of rake
 - [ ] Exchange meaningful commands and responses
 - [ ] Execute Simple Actions on rakeserver
