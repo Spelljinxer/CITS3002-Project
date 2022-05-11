@@ -25,6 +25,14 @@ while True:
     data = data.decode()
     print("Received:", data)
 
+    c2, address2 = sock.accept()
+    print("connected from:", address2)
+    data2 = c2.recv(1024)
+    data2 = data2.decode()
+    print("Received:", data2)
+
+
     c.close()
+    c2.close()
     break
 
