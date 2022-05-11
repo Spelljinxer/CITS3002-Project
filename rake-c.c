@@ -32,6 +32,8 @@ struct {
     int requirementnum;
 } actionsets[BUFFSIZE][BUFFSIZE];
 
+int actioncounts[BUFFSIZE];
+
 int total_action_count;
 
 bool StartsWith(const char *a, const char *b)
@@ -120,19 +122,17 @@ void read_rakefile(char *rakefile){
             }
             else if (strstr(buffer, ":"))
             {
+                if (setnum != -1) {
+                    actioncounts[setnum] = actionnum;
+                }
                 setnum++;
+                
                 actionnum = 0;
                 
             }
-            
-            if (actionnum != -1){
-                total_action_count += actionnum;
-            }
-
-            
         }
     }
-    //printf("actionnum: %d\n", actionnum);
+    actioncounts[setnum] = actionnum;
     //printf("total_action_count at [%d]: %d\n", setnum, total_action_count);
     fclose(fptr);
 }
@@ -157,23 +157,20 @@ int main(int argc, char* argv[])
     //         }
     //     }
     // }
-    for(int i = 0; i < 10; i++)
-    {
-        for(int j = 0; j < 10; j++)
-        {
-            if(strlen(actionsets[i][j].actionCommand) > 0)
-            {
-                printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
-            }
-        }
-    }
-    // printf("total requirement_num: %d\n", actionsets[0][0].requirementnum);
-    //printf("total_action_count: %d\n", total_action_count);
-    printf("portnumber: %d\n", portnumber);
+    // for(int i = 0; i < 10; i++)
+    // {
+    //     for(int j = 0; j < actioncounts[i]; j++)
+    //     {
+    //         if(strlen(actionsets[i][j].actionCommand) > 0)
+    //         {
+    //             printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
+    //         }
+    //     }
+    // }
 
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
-    char *hello = "Hello from client";
+    char *hello = "Hello from C Client";
     char buffer[1024] = {0};
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -197,9 +194,9 @@ int main(int argc, char* argv[])
     }
 
     send(sock , hello , strlen(hello) , 0 );
-    printf("Hello message sent\n");
+    printf("message sent\n");
     valread = read(sock, buffer, 1024);
     printf("%s\n", buffer);
-    
+  
     return 0;
 }
