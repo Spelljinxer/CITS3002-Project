@@ -6,15 +6,20 @@ Project Description:
 [NEDEN249](https://github.com/NEDEN249) <br>
 [Spelljinxer](https://github.com/Spelljinxer)
 #
-Compilation and execution for C:
+**Compilation and execution for C:**
   ```
   cc -std=c11 -Wall -Werror -o rake-c rake-c.c
   ./rake-c [arguments]
   ```
-Compilation and execution with Python:
+**Compilation and execution with Python:**
   ```
   python3 rake-p.py
   ```
+**Compilaton and execution of rakesever: _(Make sure to have multiple terminals open for this)_**
+  ```
+  python3 rakeserver.py
+  ```
+  
 <!-- UPDATE THIS AS WE GO ALONG-->
 # Task List
 - [x] Parsing Rakefile - Python Client 
