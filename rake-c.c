@@ -1,5 +1,5 @@
 /** 
- *  CITS3002 2022 Sem 1 - Project
+ *  CITS3002 2022 Sem 1 - Project - rake client C
  * @authors
  *  - Daivik Anil 22987816
  *  - Nathan Eden 22960674
@@ -11,6 +11,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include "strsplit.c"
 
 
@@ -121,7 +124,7 @@ void read_rakefile(char *rakefile){
                 actionnum = 0;
                 
             }
-            printf("actionnum: %d\n", actionnum);
+            
             if (actionnum != -1){
                 total_action_count += actionnum;
             }
@@ -129,7 +132,8 @@ void read_rakefile(char *rakefile){
             
         }
     }
-    printf("total_action_count at: %d\n", total_action_count);
+    //printf("actionnum: %d\n", actionnum);
+    //printf("total_action_count at [%d]: %d\n", setnum, total_action_count);
     fclose(fptr);
 }
 
@@ -165,5 +169,37 @@ int main(int argc, char* argv[])
     }
     // printf("total requirement_num: %d\n", actionsets[0][0].requirementnum);
     //printf("total_action_count: %d\n", total_action_count);
+    printf("portnumber: %d\n", portnumber);
+
+    int sock = 0, valread;
+    struct sockaddr_in serv_addr;
+    char *hello = "Hello from client";
+    char buffer[1024] = {0};
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        printf("\n Socket creation error \n");
+        return -1;
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(portnumber);
+
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+
+    if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("\nConnection Failed \n");
+        return -1;
+    }
+
+    send(sock , hello , strlen(hello) , 0 );
+    printf("Hello message sent\n");
+    valread = read(sock, buffer, 1024);
+    printf("%s\n", buffer);
+    
     return 0;
 }
