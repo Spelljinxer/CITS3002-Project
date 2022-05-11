@@ -1,9 +1,9 @@
-# CITS3002 2022 Sem 1 - Project
+# CITS3002 2022 Sem 1 - Project - rake client python
 # authors
 #   - Daivik Anil 22987816
 #   - Nathan Eden 22960674
 #   - Reiden Rufin 22986337
-
+import socket
 from subprocess import Popen, PIPE
 
 port = 0
@@ -15,8 +15,7 @@ with open('Rakefile', 'r') as f:
 
     for line in f:
         line = line.split("#", 1)[0].replace('\n','')
-        tabbedline = line.replace(chr(9),"")
-        if (line != "" and len(tabbedline) != 0):
+        if (line != ""):
             # First check if the line is one-tabbed.
             if (line[0] == chr(9)):
                 # Then check if line is two-tabbed.
@@ -47,16 +46,15 @@ with open('Rakefile', 'r') as f:
                     actionnum = -1
                     actionsets.append([])
 
-print(port)
-print(hosts)
-print(actionsets)
+# print(port)
+# print(hosts)
+# print(actionsets)
 
 remote = False
-error = False
 for actionset in actionsets:
     for action in actionset:
         curraction = action[0]
-
+        
         if (action[0][:7] == "remote-"):
             remote = True
             curraction = curraction[7:]
@@ -67,10 +65,9 @@ for actionset in actionsets:
         command = Popen(curraction, shell=True, stdout=PIPE)
         output = command.communicate()[0].decode('UTF-8')
         if (output != ''): print(output)
-        if (command.returncode == 1):
-            print("An error occurred.")
-            error = True
 
-    if (error):
-        print("Execution prematurely terminated due to error.")
-        break
+s = socket.socket()
+portnum = int(port)
+s.connect(('127.0.0.1', portnum)) #first parameter has to be changed to the client's hostnames
+s.send("echo CITS3002 | nc  localhost  12345".encode()) #send and encode a message to the server
+s.close()
