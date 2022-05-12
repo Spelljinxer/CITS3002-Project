@@ -6,10 +6,10 @@
 import socket
 import time
 from subprocess import Popen, PIPE
-
+#--------------------------------------------------------------------------------------------------------------
 port = 0
 hosts = []
-actionsets = []
+actionsets = [] 
 
 with open('Rakefile', 'r') as f:
     setnum = -1
@@ -66,23 +66,32 @@ for actionset in actionsets:
         command = Popen(curraction, shell=True, stdout=PIPE)
         output = command.communicate()[0].decode('UTF-8')
         if (output != ''): print(output)
-
+##-----------------------------------------------------------------------------------------------------------------
 s = socket.socket()
+
 portnum = int(port)
-s.connect(('127.0.0.01', portnum)) #first parameter has to be changed to the client's hostnames
-    #127.0.0.1 just refers to localhost
-    # if u want to run this on two different computers
-        # get the hostname using socket.hostname()
-        # then replace the 127.0.0.1 with that hostname
-        # RUN THIS PROGRAM ON A DIFFERENT COMPUTER
-        # MAKE SURE SERVER IS ON THIS DEVICE
-message = "echo CITS3002 | nc  localhost  12345"
-print("Sending message: " + message)
-s.send(message.encode()) #send and encode a message to the server
-#receive a message from the server
-data = s.recv(1024)
-print("Receiving Message...")
-time.sleep(1)
-data = data.decode()
-print("Received packet from server: " + data)
-s.close()
+s.connect(('127.0.0.01', portnum))
+
+s2 = socket.socket()
+s2.connect(('127.0.0.1', portnum)) #this should be another instance of a rakeserver
+
+while True:
+    message = "hello localserver"
+    print("Sending message to localserver")
+    s.send(message.encode()) 
+    data = s.recv(1024)
+    data = data.decode()
+    print("Received packet from localserver:", data)
+
+    message2 = "hello remote server!"
+    print("Sending message to remote server: ")
+    s2.send(message2.encode())
+    data2 = s2.recv(1024)
+    data2 = data2.decode()
+    print("Received packet from remote server: " + data2)
+    s.close()
+    break
+
+
+
+    
