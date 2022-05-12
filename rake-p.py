@@ -4,6 +4,7 @@
 #   - Nathan Eden 22960674
 #   - Reiden Rufin 22986337
 import socket
+import time
 from subprocess import Popen, PIPE
 
 port = 0
@@ -68,6 +69,20 @@ for actionset in actionsets:
 
 s = socket.socket()
 portnum = int(port)
-s.connect(('127.0.0.1', portnum)) #first parameter has to be changed to the client's hostnames
-s.send("echo CITS3002 | nc  localhost  12345".encode()) #send and encode a message to the server
+s.connect(('127.0.0.01', portnum)) #first parameter has to be changed to the client's hostnames
+    #127.0.0.1 just refers to localhost
+    # if u want to run this on two different computers
+        # get the hostname using socket.hostname()
+        # then replace the 127.0.0.1 with that hostname
+        # RUN THIS PROGRAM ON A DIFFERENT COMPUTER
+        # MAKE SURE SERVER IS ON THIS DEVICE
+message = "echo CITS3002 | nc  localhost  12345"
+print("Sending message: " + message)
+s.send(message.encode()) #send and encode a message to the server
+#receive a message from the server
+data = s.recv(1024)
+print("Receiving Message...")
+time.sleep(1)
+data = data.decode()
+print("Received packet from server: " + data)
 s.close()
