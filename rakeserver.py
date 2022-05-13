@@ -6,33 +6,38 @@
 #--------------------------------------------------------------------------
 
 import socket
+import time
+import os
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-port = 6238 #going to need a way to change this so its dynamic with the client's Rakefiles
+port = 6238
 sock.bind(('', port))
 print("Listening on port " + str(port))
-
 sock.listen(5)
 
-while True:
+def send_and_receive(sock, pid):
+    data = sock.recv(1024).decode()
+    print("Received from client: ", data)
+    time.sleep(os.getpid() % 5 + 2)
+    print("Sending back data to client from pid: " + str(pid))
+    sock.send(data.encode())
+    
+keep_going = True
+
+while keep_going:
     c, address = sock.accept()
+    if c is None:
+        print("Connection failed")
+        keep_going = False
     print("connected from:", address)
+    pid = os.fork()
 
-    c.send("Hello, client!".encode())
-    #receive message from client and decode it
-    data = c.recv(1024)
-    data = data.decode()
-    print("Received:", data)
-
-    c2, address2 = sock.accept()
-    print("connected from:", address2)
-    data2 = c2.recv(1024)
-    data2 = data2.decode()
-    print("Received:", data2)
-
-
-    c.close()
-    c2.close()
-    break
-
+    if pid == 0:
+        getpid = os.getpid()
+        send_and_receive(c, getpid)
+    else:
+        getpid = os.getpid()
+        send_and_receive(c, getpid)
+      
+ 
