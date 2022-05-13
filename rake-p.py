@@ -66,32 +66,21 @@ for actionset in actionsets:
         command = Popen(curraction, shell=True, stdout=PIPE)
         output = command.communicate()[0].decode('UTF-8')
         if (output != ''): print(output)
+
 ##-----------------------------------------------------------------------------------------------------------------
+
+def send_message(socket, message):
+    socket.send(message.encode())
+    data = socket.recv(1024)
+    data = data.decode()
+    print("Got message back from server: " + data)
+
+
 s = socket.socket()
-
+message = "hello server from client!" 
 portnum = int(port)
-s.connect(('127.0.0.01', portnum))
-
-s2 = socket.socket()
-s2.connect(('127.0.0.1', portnum)) #this should be another instance of a rakeserver
+s.connect(('localhost', portnum))
 
 while True:
-    message = "hello localserver"
-    print("Sending message to localserver")
-    s.send(message.encode()) 
-    data = s.recv(1024)
-    data = data.decode()
-    print("Received packet from localserver:", data)
-
-    message2 = "hello remote server!"
-    print("Sending message to remote server: ")
-    s2.send(message2.encode())
-    data2 = s2.recv(1024)
-    data2 = data2.decode()
-    print("Received packet from remote server: " + data2)
-    s.close()
-    break
-
-
-
-    
+    send_message(s, message)
+   
