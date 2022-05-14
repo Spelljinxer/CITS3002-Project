@@ -137,6 +137,25 @@ void read_rakefile(char *rakefile){
     fclose(fptr);
 }
 
+//--------------------------------------------------------------------------------------------------------------------------
+
+
+void send_message(int sock, int valread, char buffer[], char* message)
+{
+    printf("Sending message from C Client...\n");
+    send(sock , message, strlen(message) , 0 );
+    valread = read(sock, buffer, 1024);
+    printf("Received the message: %s\n", buffer);
+}
+
+void quote_servers()
+{
+    float placeholder = 'inf';
+    int min_cost = (int) placeholder;
+    
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
 
 
 int main(int argc, char* argv[])
@@ -167,36 +186,37 @@ int main(int argc, char* argv[])
     //         }
     //     }
     // }
-
-    int sock = 0, valread;
-    struct sockaddr_in serv_addr;
-    char *hello = "Hello from C Client";
-    char buffer[1024] = {0};
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    quote_servers();
+    while(true)
     {
-        printf("\n Socket creation error \n");
-        return -1;
+        int sock = 0, valread;
+        struct sockaddr_in serv_addr;
+        char *message = "Hello from C Client";
+        char buffer[BUFFSIZE] = {0};
+
+        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            printf("\n Socket creation error \n");
+            return -1;
+        }
+
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(portnumber);
+
+        if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+        {
+            printf("\nInvalid address/ Address not supported \n");
+            return -1;
+        }
+
+        if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        {
+            printf("\nConnection Failed \n");
+            return -1;
+        }
+
+        send_message(sock, valread, buffer, message);
     }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(portnumber);
-
-    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
-    {
-        printf("\nInvalid address/ Address not supported \n");
-        return -1;
-    }
-
-    if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        printf("\nConnection Failed \n");
-        return -1;
-    }
-
-    send(sock , hello , strlen(hello) , 0 );
-    printf("message sent\n");
-    valread = read(sock, buffer, 1024);
-    printf("%s\n", buffer);
-  
+    
+    
     return 0;
-}
