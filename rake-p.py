@@ -4,7 +4,7 @@
 #   - Nathan Eden 22960674
 #   - Reiden Rufin 22986337
 import socket
-import time
+import select
 from subprocess import Popen, PIPE
 #--------------------------------------------------------------------------------------------------------------
 port = 0
@@ -16,7 +16,7 @@ with open('Rakefile', 'r') as f:
 
     for line in f:
         line = line.split("#", 1)[0].replace('\n','')
-        if (line != ""):
+        if (line != "" and len(line.replace(chr(9),"")) != 0):
             # First check if the line is one-tabbed.
             if (line[0] == chr(9)):
                 # Then check if line is two-tabbed.
@@ -69,18 +69,53 @@ for actionset in actionsets:
 
 ##-----------------------------------------------------------------------------------------------------------------
 
+# iterate through every host + port, send message, wait for reply via select, do shit.
+
+def quote_servers():
+    min_cost = float('inf')
+    min_sock = None
+    connections = []
+
+    for host in hosts:
+        portnum = int(port)
+
+        if (host.count(':') > 0):
+            portnum = int(host.split(":")[1])
+            host = host.split(":")[0]
+
+        sock = socket.socket()
+        sock.connect((host, portnum))
+
+        message = "quote,None"
+        sock.send(message.encode())
+        connections.append(sock)
+
+    while connections:
+        ready, empty, error = select.select(connections, [], connections)
+
+        for sock in ready:
+            data = sock.recv(1024)
+            if data:
+                data = data.decode()
+
+                if (int(data) < min_cost):
+                    min_cost = int(data)
+                    if min_sock: min_sock.close()
+                    min_sock = sock
+                else:
+                    sock.close()
+
+                connections.remove(sock)
+
+    print(min_sock)
+    return min_sock
+
+quote_servers()
+
 def send_message(socket, message):
+    print("Sending message from client...")
     socket.send(message.encode())
     data = socket.recv(1024)
     data = data.decode()
     print("Got message back from server: " + data)
-
-
-s = socket.socket()
-message = "hello server from client!" 
-portnum = int(port)
-s.connect(('localhost', portnum))
-
-while True:
-    send_message(s, message)
    
