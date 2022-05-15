@@ -5,6 +5,9 @@
 #   - Reiden Rufin 22986337
 import socket
 import select
+from asyncio import subprocess
+from subprocess import Popen, PIPE
+import subprocess
 #--------------------------------------------------------------------------------------------------------------
 port = 0
 hosts = []
@@ -38,6 +41,7 @@ def quote_servers():
             data = sock.recv(1024)
             if data:
                 data = data.decode().split(",")
+                #print("data is: ", data)
                 data[1] = int(data[1])
                 cost = int(data[2])
 
@@ -97,9 +101,12 @@ def process_actions():
     global hosts
     global actionsets
 
+    
     for actionset in actionsets:
+        continue_actionsets = True
+        shit = False
         connections = []
-
+        
         for action in actionset:
             curraction = action[0]
 
@@ -126,13 +133,22 @@ def process_actions():
             ready, empty, error = select.select(connections, [], connections)
             for sock in ready:
                 data = sock.recv(1024)
-                if data:
+                msg = data.decode()
+                status = subprocess.getstatusoutput(msg)
+                if data and (status[0] != 0) and (continue_actionsets == True):
                     data = data.decode()
                     print(data)
-
                     sock.close()
                     connections.remove(sock)
-
+                if (status[0] == 0):
+                    shit = True
+                    sock.close()
+                    connections.remove(sock)
+        if(shit):
+            continue_actionsets = False
+        if continue_actionsets == False:
+            break        
+          
 parse_rakefile()
 process_actions()
 
@@ -162,10 +178,9 @@ process_actions()
 
 ##-----------------------------------------------------------------------------------------------------------------
 
-def send_message(socket, message):
-    print("Sending message from client...")
-    socket.send(message.encode())
-    data = socket.recv(1024)
-    data = data.decode()
-    print("Got message back from server: " + data)
-   
+# def send_message(socket, message):
+#     print("Sending message from client...")
+#     socket.send(message.encode())
+#     data = socket.recv(1024)
+#     data = data.decode()
+#     print("INCOMING DATA: ", data)
