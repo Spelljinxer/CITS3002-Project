@@ -34,6 +34,7 @@ Project Description:
 - [ ] Perform Compiliation and Linking
 - [ ] Test two-tabbed lines that are only a comment w/ C and Python.
 - [ ] Check if the python TODOs are fine.
+- [ ] Catch errors
 
 <!-- Could update this with more links for the future -->
 # Useful Links idk
