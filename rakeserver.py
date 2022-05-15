@@ -16,7 +16,6 @@ print("Listening on port " + str(port))
 sock.listen(5)
 
 def send_data(sock, data):
-    time.sleep(os.getpid() % 5 + 2)
     print("Sending back data to client " + data)
     sock.send(data.encode())
 
@@ -30,8 +29,14 @@ def send_and_receive(sock):
         data = str(socket.gethostbyname(socket.gethostname())) + "," + str(port) + "," + str(random.randint(0,100))
         send_data(sock, data)
     if (datatype == "action"):
-        data = "action!!"
-        send_data(sock, data)
+        pid = os.fork()
+        if (pid == 0):
+            time.sleep(os.getpid() % 5 + 2)
+            command = Popen(data, shell=True, stdout=PIPE)
+            output = command.communicate()[0].decode('UTF-8')
+            data = output
+            send_data(sock, data)
+            os._exit(0)
         #pid = os.fork()
         #if (pid == 0):
             #command = Popen(data, shell=True, stdout=PIPE)

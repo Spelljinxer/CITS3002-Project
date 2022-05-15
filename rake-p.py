@@ -117,6 +117,7 @@ def process_actions():
                 sock = socket.socket()
                 sock.connect(sockinfo)
 
+
             message = "action," + curraction
             sock.send(message.encode())
             connections.append(sock)
@@ -139,20 +140,20 @@ process_actions()
 # print(hosts)
 # print(actionsets)
 
-remote = False
-for actionset in actionsets:
-    for action in actionset:
+#remote = False
+#for actionset in actionsets:
+    #for action in actionset:
 
         #sock = quote_servers()
-        curraction = action[0]
+        #curraction = action[0]
 
-        if (action[0][:7] == "remote-"):
-            remote = True
-            curraction = curraction[7:]
+        #if (action[0][:7] == "remote-"):
+            #remote = True
+            #curraction = curraction[7:]
             #print("Remotely executing " + action[0][7:])
-        else:
+        #else:
             #TODO: remove pass?
-            pass
+            #pass
             #print("Executing " + action[0])
 
         #command = Popen(curraction, shell=True, stdout=PIPE)
@@ -160,12 +161,6 @@ for actionset in actionsets:
         #if (output != ''): print(output)
 
 ##-----------------------------------------------------------------------------------------------------------------
-
-# iterate through every host + port, send message, wait for reply via select, do shit.
-
-
-
-
 
 def send_message(socket, message):
     print("Sending message from client...")
