@@ -5,8 +5,13 @@
 #   - Reiden Rufin 22986337
 #--------------------------------------------------------------------------
 
+from asyncio import subprocess
+from re import sub
 import socket, time, os, random
+from sys import stderr
 from subprocess import Popen, PIPE
+import subprocess
+
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -15,13 +20,16 @@ sock.bind(('', port))
 print("Listening on port " + str(port))
 sock.listen(5)
 
+
+
 def send_data(sock, data):
     print("Sending back data to client " + data)
     sock.send(data.encode())
 
 def send_and_receive(sock):
     data = sock.recv(1024).decode()
-    print("Received from client: ", data)
+ 
+    print("INCOMING DATA: ", data)
     datatype = data.split(",")[0]
     data = data.split(",")[1]
     if (datatype == "quote"):
