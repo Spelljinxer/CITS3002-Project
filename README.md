@@ -27,8 +27,8 @@ Project Description:
 - [ ] Optimize C Client (realocation of size exceeding)
 - [x] Start of rakeserver
 - [x] Rake clients contact rakeserver
-- [ ] Support Multiple Instances of rake
-- [ ] Exchange meaningful commands and responses
+- [x] Support Multiple Instances of rake
+- [x] Exchange meaningful commands and responses
 - [ ] Execute Simple Actions on rakeserver
 - [ ] Perform Compiliation and Linking
 - [ ] Test two-tabbed lines that are only a comment w/ C and Python.
