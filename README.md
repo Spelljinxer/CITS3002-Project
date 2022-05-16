@@ -1,6 +1,6 @@
 # CITS3002-Project
 <p align="center">
-  <b> <h1>HIMEKO KILLED BY KIANA HOV?</b><br>
+  <b> <h1>HIMEKO KILLED BY KIANA HOV?</h1></b><br>
   <img src="https://c.tenor.com/h3zX-_0GoooAAAAM/himeko-murata-himeko.gif" | width=900><br>
 </p>
 
