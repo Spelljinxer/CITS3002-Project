@@ -5,6 +5,7 @@
 #   - Reiden Rufin 22986337
 import socket
 import select
+import sys
 from asyncio import subprocess
 from subprocess import Popen, PIPE
 import subprocess
@@ -41,7 +42,7 @@ def quote_servers():
             data = sock.recv(1024)
             if data:
                 data = data.decode().split(",")
-                #print("data is: ", data)
+                
                 data[1] = int(data[1])
                 cost = int(data[2])
 
@@ -120,10 +121,10 @@ def process_actions():
                 #curraction = curraction[]
                 print("Executing " + curraction)
                 sockinfo = quote_servers()
-                print(sockinfo)
+                print("sockinfo:", sockinfo)
                 sock = socket.socket()
                 sock.connect(sockinfo)
-
+                
 
             message = "action," + curraction
             sock.send(message.encode())
@@ -132,12 +133,16 @@ def process_actions():
         while connections:
             ready, empty, error = select.select(connections, [], connections)
             for sock in ready:
-                data = sock.recv(1024)
-                msg = data.decode()
+                recv_size = 1024 
+                data = sock.recv(recv_size)
+                data_size = int(data.decode().split(",")[0]) #get the data size, which is the first element
+                msg = data.decode().split(",")[1] #get the rest of the message
+                if(data_size > recv_size):  #if we've exceeded our recvsize
+                    recv_size = data_size  #set the new recvsize to the data size
+                    msg += sock.recv(recv_size).decode() #decode the rest of the message then add it to the message
                 status = subprocess.getstatusoutput(msg)
                 if data and (status[0] != 0) and (continue_actionsets == True):
-                    data = data.decode()
-                    print(data)
+                    print("INCOMING<--",msg)
                     sock.close()
                     connections.remove(sock)
                 if (status[0] == 0):
