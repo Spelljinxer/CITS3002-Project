@@ -32,7 +32,7 @@ def quote_servers():
         sock.connect((host, portnum))
 
         message = "quote,None"
-        sock.send(message.encode())
+        sock.sendall(message.encode())
         connections.append(sock)
 
     while connections:
@@ -124,9 +124,10 @@ def process_actions():
                 print("sockinfo:", sockinfo)
                 sock = socket.socket()
                 sock.connect(sockinfo)
+                
 
             message = "action," + curraction
-            sock.send(message.encode())
+            sock.sendall(message.encode())
             connections.append(sock)
 
         while connections:
@@ -134,63 +135,34 @@ def process_actions():
             for sock in ready:
                 data_left = float('inf')
                 f_data = ""
+                exitcode = 0
+                
                 while data_left > 0:
-                    data = sock.recv(10)
+                    data = sock.recv(1024)
                     if data:
                         data = data.decode()
+                        data_exitcode = int(data.split(",")[1])
                         if data_left == float('inf'):
                             data = data.split(",")
                             data_left = int(data[0])
-                            data = "".join(data[1:])
+                            data = "".join(data[2:])
 
                         data_left -= len(data)
                         f_data += data
                         print("Bytes left:", data_left)
                         print("INCOMING<--", f_data)
-
-                status = subprocess.getstatusoutput(f_data)
-                if (status[0] == 0):
+                exitcode += data_exitcode
+                print("Exitcode:", exitcode)
+                #status = subprocess.getstatusoutput(f_data)
+                if (exitcode == 0):
                     shit = True
-                    print(status)
+                    #print(status)
 
                 sock.close()
                 connections.remove(sock)
 
         if(shit):
-            break
+            break        
           
 parse_rakefile()
 process_actions()
-
-# print(port)
-# print(hosts)
-# print(actionsets)
-
-#remote = False
-#for actionset in actionsets:
-    #for action in actionset:
-
-        #sock = quote_servers()
-        #curraction = action[0]
-
-        #if (action[0][:7] == "remote-"):
-            #remote = True
-            #curraction = curraction[7:]
-            #print("Remotely executing " + action[0][7:])
-        #else:
-            #TODO: remove pass?
-            #pass
-            #print("Executing " + action[0])
-
-        #command = Popen(curraction, shell=True, stdout=PIPE)
-        #output = command.communicate()[0].decode('UTF-8')
-        #if (output != ''): print(output)
-
-##-----------------------------------------------------------------------------------------------------------------
-
-# def send_message(socket, message):
-#     print("Sending message from client...")
-#     socket.send(message.encode())
-#     data = socket.recv(1024)
-#     data = data.decode()
-#     print("INCOMING DATA: ", data)
