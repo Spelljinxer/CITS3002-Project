@@ -26,7 +26,7 @@ sock.listen(5)
 
 def send_data(sock, data):
     print("OUTGOING-->" + data)
-    sock.send(data.encode())
+    sock.sendall(data.encode())
 
 def send_and_receive(sock):
     recv_size = 1024
@@ -43,9 +43,8 @@ def send_and_receive(sock):
         if (pid == 0):
             time.sleep(os.getpid() % 5 + 2)
             command = Popen(data, shell=True, stdout=PIPE)
-            output = command.communicate()[0].decode('UTF-8')
-            data = output 
-            data_size = sys.getsizeof(data) #get the size of data we're sending
+            data = command.communicate()[0].decode('UTF-8')
+            data_size = len(str(data)) #get the size of data we're sending
             data_msg = str(data_size) + "," + data #add it to the start
             send_data(sock, data_msg) #send the new data 
             os._exit(0)

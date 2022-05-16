@@ -124,7 +124,6 @@ def process_actions():
                 print("sockinfo:", sockinfo)
                 sock = socket.socket()
                 sock.connect(sockinfo)
-                
 
             message = "action," + curraction
             sock.send(message.encode())
@@ -133,26 +132,32 @@ def process_actions():
         while connections:
             ready, empty, error = select.select(connections, [], connections)
             for sock in ready:
-                recv_size = 1024 
-                data = sock.recv(recv_size)
-                data_size = int(data.decode().split(",")[0]) #get the data size, which is the first element
-                msg = data.decode().split(",")[1] #get the rest of the message
-                if(data_size > recv_size):  #if we've exceeded our recvsize
-                    recv_size = data_size  #set the new recvsize to the data size
-                    msg += sock.recv(recv_size).decode() #decode the rest of the message then add it to the message
-                status = subprocess.getstatusoutput(msg)
-                if data and (status[0] != 0) and (continue_actionsets == True):
-                    print("INCOMING<--",msg)
-                    sock.close()
-                    connections.remove(sock)
+                data_left = float('inf')
+                f_data = ""
+                while data_left > 0:
+                    data = sock.recv(10)
+                    if data:
+                        data = data.decode()
+                        if data_left == float('inf'):
+                            data = data.split(",")
+                            data_left = int(data[0])
+                            data = "".join(data[1:])
+
+                        data_left -= len(data)
+                        f_data += data
+                        print("Bytes left:", data_left)
+                        print("INCOMING<--", f_data)
+
+                status = subprocess.getstatusoutput(f_data)
                 if (status[0] == 0):
                     shit = True
-                    sock.close()
-                    connections.remove(sock)
+                    print(status)
+
+                sock.close()
+                connections.remove(sock)
+
         if(shit):
-            continue_actionsets = False
-        if continue_actionsets == False:
-            break        
+            break
           
 parse_rakefile()
 process_actions()
