@@ -14,13 +14,12 @@ port = 0
 hosts = []
 actionsets = []
 
-# i put them in functions just to make it easier to understand, we can reorganise it later
 
 # quotes servers for costs and shit
-def quote_servers():
+def quote_servers(index):
     min_cost = float('inf')
     connections = []
-
+    
     for host in hosts:
         portnum = int(port)
 
@@ -30,8 +29,15 @@ def quote_servers():
 
         sock = socket.socket()
         sock.connect((host, portnum))
-
-        message = "quote,None"
+        try:
+            if(len(actionsets[0][index] > 1)):
+                requirements = " ".join(actionsets[0][index][1:])
+        except:
+            requirements = "None"
+        print("requirements: ", requirements)
+        message = "quote,"
+        message += requirements
+        #print("message is: ", message)
         sock.sendall(message.encode())
         connections.append(sock)
 
@@ -97,6 +103,8 @@ def parse_rakefile():
                         actionnum = -1
                         actionsets.append([])
 
+
+
 def process_actions():
     global port
     global hosts
@@ -107,7 +115,7 @@ def process_actions():
         shit = False
         connections = []
         
-        for action in actionset:
+        for index, action in enumerate(actionset):
             curraction = action[0]
 
             if (action[0][:7] == "remote-"):
@@ -119,7 +127,7 @@ def process_actions():
             else:
                 #curraction = curraction[]
                 print("Executing " + curraction)
-                sockinfo = quote_servers()
+                sockinfo = quote_servers(index)
                 print("sockinfo:", sockinfo)
                 sock = socket.socket()
                 sock.connect(sockinfo)
@@ -148,9 +156,9 @@ def process_actions():
 
                         data_left -= len(data)
                         f_data += data
-                        print("Bytes left:", data_left)
+                        #print("Bytes left:", data_left)
                         print("INCOMING<--", f_data)
-                print("Exitcode:", data_exitcode)
+                #print("Exitcode:", data_exitcode)
                 if (data_exitcode != 0):
                     shit = True
 
@@ -162,4 +170,5 @@ def process_actions():
             break        
           
 parse_rakefile()
+
 process_actions()
