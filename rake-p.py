@@ -143,7 +143,7 @@ def process_actions():
                         if data_left == float('inf'):
                             data = data.split(",")
                             data_left = int(data[0])
-                            data_exitcode = int(data.split(",")[1])
+                            data_exitcode = int(data[1])
                             data = "".join(data[2:])
 
                         data_left -= len(data)
@@ -158,6 +158,7 @@ def process_actions():
                 connections.remove(sock)
 
         if(shit):
+            print("shit == True")
             break        
           
 parse_rakefile()
