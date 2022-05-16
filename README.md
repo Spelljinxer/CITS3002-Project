@@ -30,7 +30,8 @@ Project Description:
 - [x] Support Multiple Instances of rake
 - [x] Exchange meaningful commands and responses
 - [x] Execute Simple Actions on rakeserver
-- [ ] Receive errors and terminate on error
+- [x] Dynamic recv() sizing
+- [x] Receive errors and terminate on error
 - [ ] Perform Compiliation and Linking
 - [ ] Test two-tabbed lines that are only a comment w/ C and Python.
 - [ ] Check if the python TODOs are fine.
