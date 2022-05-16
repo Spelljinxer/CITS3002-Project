@@ -104,7 +104,6 @@ def process_actions():
 
     
     for actionset in actionsets:
-        continue_actionsets = True
         shit = False
         connections = []
         
@@ -135,28 +134,25 @@ def process_actions():
             for sock in ready:
                 data_left = float('inf')
                 f_data = ""
-                exitcode = 0
+                data_exitcode = 0
                 
                 while data_left > 0:
                     data = sock.recv(1024)
                     if data:
                         data = data.decode()
-                        data_exitcode = int(data.split(",")[1])
                         if data_left == float('inf'):
                             data = data.split(",")
                             data_left = int(data[0])
+                            data_exitcode = int(data.split(",")[1])
                             data = "".join(data[2:])
 
                         data_left -= len(data)
                         f_data += data
                         print("Bytes left:", data_left)
                         print("INCOMING<--", f_data)
-                exitcode += data_exitcode
-                print("Exitcode:", exitcode)
-                #status = subprocess.getstatusoutput(f_data)
-                if (exitcode == 0):
+                print("Exitcode:", data_exitcode)
+                if (data_exitcode != 0):
                     shit = True
-                    #print(status)
 
                 sock.close()
                 connections.remove(sock)

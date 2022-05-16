@@ -4,8 +4,8 @@ PORT  = 6238
 HOSTS = localhost localhost:6239 localhost:6240
 
 actionset1:
-	remote-echo starting actionset1 action 1
-	remote-echo starting actionset1 action 2
+	remote-true
+	remote-echo hi
 	remote-echo starting actionset1 action 3
 	remote-echo starting actionset1 action 4
 	remote-echo starting actionset1 action 5
@@ -17,7 +17,7 @@ actionset1:
 		#requires cube.c allfunctions.h
 
 actionset2:
-	remote-echo starting actionset2 action 1
+	remote-false
 	remote-echo starting actionset2 action 2
 	#remote-cc [optional-flags] -o program program.o square.o cube.o
 		#requires program.o square.o cube.o
