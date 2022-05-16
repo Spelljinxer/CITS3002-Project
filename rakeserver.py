@@ -6,11 +6,13 @@
 #--------------------------------------------------------------------------
 
 from asyncio import subprocess
+from curses import echo
 from re import sub
 import socket, time, os, random
 from sys import stderr
 from subprocess import Popen, PIPE
 import subprocess
+import sys
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,13 +25,13 @@ sock.listen(5)
 
 
 def send_data(sock, data):
-    print("Sending back data to client " + data)
+    print("OUTGOING-->" + data)
     sock.send(data.encode())
 
 def send_and_receive(sock):
-    data = sock.recv(1024).decode()
- 
-    print("INCOMING DATA: ", data)
+    recv_size = 1024
+    data = sock.recv(recv_size).decode()
+    print("INCOMING<--", data)
     datatype = data.split(",")[0]
     data = data.split(",")[1]
     if (datatype == "quote"):
@@ -42,8 +44,10 @@ def send_and_receive(sock):
             time.sleep(os.getpid() % 5 + 2)
             command = Popen(data, shell=True, stdout=PIPE)
             output = command.communicate()[0].decode('UTF-8')
-            data = output
-            send_data(sock, data)
+            data = output 
+            data_size = sys.getsizeof(data) #get the size of data we're sending
+            data_msg = str(data_size) + "," + data #add it to the start
+            send_data(sock, data_msg) #send the new data 
             os._exit(0)
         #pid = os.fork()
         #if (pid == 0):
