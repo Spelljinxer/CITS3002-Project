@@ -1,6 +1,9 @@
 # CITS3002-Project
+<p align="center">
+  <b> <h1>HIMEKO KILLED BY KIANA HOV?</b><br>
+  <img src="https://c.tenor.com/h3zX-_0GoooAAAAM/himeko-murata-himeko.gif" | width=900><br>
+</p>
 
-![](https://c.tenor.com/h3zX-_0GoooAAAAM/himeko-murata-himeko.gif) KIANA KILLS HIMEKO<br>
 Project Description:
 > Develop a internetworked application that compiles and links C programs across different computers connected using internet protocols.
 # Team Members:
