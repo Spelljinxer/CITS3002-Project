@@ -37,10 +37,20 @@ Project Description:
 - [x] Execute Simple Actions on rakeserver
 - [x] Dynamic recv() sizing
 - [x] Receive errors and terminate on error
+- [ ] Send requirements to server, have server check if those are present in directory (implement cost equation via this)
+- [ ] Redo entire sending of data process.
+- [ ] Send stderr to clients to print
+- [ ] Have the server check if any new files were created, if so send them back to the user.
+- [ ] Implement sending files back to the user (separate from sending command outputs).
+- [ ] Implement sending files to the server (server requires recv code)
 - [ ] Perform Compiliation and Linking
 - [ ] Test two-tabbed lines that are only a comment w/ C and Python.
 - [ ] Check if the python TODOs are fine.
+- [ ] Refactor code on Python
+- [ ] Complete C code
+- [ ] Refactor C code
 - [ ] Catch errors
+- [ ] Complete report
 
 <!-- Could update this with more links for the future -->
 # Useful Links idk
