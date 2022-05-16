@@ -44,17 +44,12 @@ def send_and_receive(sock):
             time.sleep(os.getpid() % 5 + 2)
             command = Popen(data, shell=True, stdout=PIPE)
             data = command.communicate()[0].decode('UTF-8')
+            exitcode = command.returncode
+            print("EXITCODE:", exitcode)
             data_size = len(str(data)) #get the size of data we're sending
-            data_msg = str(data_size) + "," + data #add it to the start
+            data_msg = str(data_size) + "," + str(exitcode) + "," + data #add it to the start
             send_data(sock, data_msg) #send the new data 
             os._exit(0)
-        #pid = os.fork()
-        #if (pid == 0):
-            #command = Popen(data, shell=True, stdout=PIPE)
-            #output = command.communicate()[0].decode('UTF-8')
-            #if (output != ''): data = output
-            #send_data(data)
-            #sock.close()
 
     else:
         #TODO: figure out how to return errors I guess?
@@ -70,13 +65,5 @@ while keep_going:
     print("connected from:", address)
     send_and_receive(c)
 
-    #pid = os.fork()
-
-    #if pid == 0:
-        #getpid = os.getpid()
-        #send_and_receive(c, getpid)
-    #else:
-        #getpid = os.getpid()
-        #send_and_receive(c, getpid)
       
  
