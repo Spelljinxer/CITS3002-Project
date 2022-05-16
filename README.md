@@ -26,7 +26,7 @@ Project Description:
 # Task List
 - [x] Parsing Rakefile - Python Client 
 - [x] Parsing Rakefile - C Client
-- [ ] Optimize C Client (realocation of size exceeding)
+- [ ] Optimize C Client (realocation of size exceeding) (fuck C)
 - [x] Start of rakeserver
 - [x] Rake clients contact rakeserver
 - [x] Support Multiple Instances of rake
