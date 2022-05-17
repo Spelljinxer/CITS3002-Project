@@ -1,4 +1,4 @@
-/** 
+/**
  *  CITS3002 2022 Sem 1 - Project - rake client C
  * @authors
  *  - Daivik Anil 22987816
@@ -26,15 +26,20 @@ char hosts[][BUFFSIZE] = {};
 
 int portnumber;
 
+
 struct {
     char actionCommand[BUFFSIZE];
     char **requirements;
     int requirementnum;
 } actionsets[BUFFSIZE][BUFFSIZE];
 
+int setcount = 0;
 int actioncounts[BUFFSIZE];
 
-int total_action_count;
+// actionsets[actionsetnum][???] will be the max length for the first array
+// actionsets[0][actioncounts[0]] will be the max length for the second array of the first index
+// actionsets[1][actioncounts[1]] will be the max length for the second array of the second index
+// requirements are already dynamic, so there's no need to change it
 
 bool StartsWith(const char *a, const char *b)
 {
@@ -44,22 +49,22 @@ bool StartsWith(const char *a, const char *b)
 
 char *trimwhitespace(char *str)
 {
-  char *end;
+    char *end;
 
-  // Trim leading space
-  while(isspace((unsigned char)*str)) str++;
+    // Trim leading space
+    while(isspace((unsigned char)*str)) str++;
 
-  if(*str == 0)  // All spaces?
+    if(*str == 0)  // All spaces?
+        return str;
+
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+
+    // Write new null terminator character
+    end[1] = '\0';
+
     return str;
-
-  // Trim trailing space
-  end = str + strlen(str) - 1;
-  while(end > str && isspace((unsigned char)*end)) end--;
-
-  // Write new null terminator character
-  end[1] = '\0';
-
-  return str;
 }
 
 
@@ -76,7 +81,7 @@ void read_rakefile(char *rakefile){
     int actionnum = -1;
     int nwords;
 
-   
+
     while (fgets (buffer, BUFFSIZE, fptr))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
@@ -86,7 +91,7 @@ void read_rakefile(char *rakefile){
 
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
-                
+
                 char **splitreqs = strsplit(buffer, &nwords);
                 actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
 
@@ -104,7 +109,7 @@ void read_rakefile(char *rakefile){
                 actionnum++;
             }
         }
-        
+
         else
         {
             if(strstr(buffer, "PORT"))
@@ -126,9 +131,10 @@ void read_rakefile(char *rakefile){
                     actioncounts[setnum] = actionnum;
                 }
                 setnum++;
-                
+                setcount++;
+
                 actionnum = 0;
-                
+
             }
         }
     }
@@ -152,50 +158,47 @@ void quote_servers()
 {
     float placeholder = 'inf';
     int min_cost = (int) placeholder;
-    
+
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     read_rakefile(argv[1]);
 
-    // for(int i = 0; i < 10; i++)
-    // {
-    //     for(int j = 0; j < 10; j++)
-    //     {
-    //         //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
-    //         if (actionsets[i][j].requirementnum > 0) {
-    //             for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
+    //for(int i = 0; i < 10; i++)
+    //{
+        // for(int j = 0; j < 10; j++)
+        // {
+             //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
+          //   if (actionsets[i][j].requirementnum > 0) {
+               //  for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
 
-    //                 //printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
-    //                 printf("actionsets[%d][%d]: %s \n", i, j, &actionsets[i][j].actionCommand);
-    //             }
-    //         }
-    //     }
-    // }
-    // for(int i = 0; i < 10; i++)
-    // {
-    //     for(int j = 0; j < actioncounts[i]; j++)
-    //     {
-    //         if(strlen(actionsets[i][j].actionCommand) > 0)
-    //         {
-    //             printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
-    //         }
-    //     }
-    // }
+                     //printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+             //        printf("actionsets[%d][%d]: %s \n", i, j, &actionsets[i][j].actionCommand);
+           //      }
+         //    }
+       //  }
+     //}
+     for(int i = 0; i < 10; i++)
+     {
+         for(int j = 0; j < actioncounts[i]; j++)
+         {
+             if(strlen(actionsets[i][j].actionCommand) > 0)
+             {
+                 printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
+             }
+         }
+     }
     quote_servers();
-    while(true)
-    {
+    while (true) {
         int sock = 0, valread;
         struct sockaddr_in serv_addr;
         char *message = "Hello from C Client";
         char buffer[BUFFSIZE] = {0};
 
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        {
+        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             printf("\n Socket creation error \n");
             return -1;
         }
@@ -203,20 +206,19 @@ int main(int argc, char* argv[])
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_port = htons(portnumber);
 
-        if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
-        {
+        if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
             printf("\nInvalid address/ Address not supported \n");
             return -1;
         }
 
-        if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-        {
+        if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
             printf("\nConnection Failed \n");
             return -1;
         }
 
         send_message(sock, valread, buffer, message);
     }
-    
-    
+
+
     return 0;
+}
