@@ -10,15 +10,12 @@
 #include <stdlib.h>
 #include "strsplit.c"
 #include "c-client.h"
-
-
 //-------------------------------------------------------------------------
 
 
 char hosts[][BUFFSIZE] = {};
 
 int portnumber;
-
 
 struct {
     char actionCommand[BUFFSIZE];
@@ -34,7 +31,7 @@ int actioncounts[BUFFSIZE];
 // actionsets[1][actioncounts[1]] will be the max length for the second array of the second index
 // requirements are already dynamic, so there's no need to change it
 
-
+//-------------------------------------------------------------------------
 
 
 void read_rakefile(char *rakefile){
@@ -50,8 +47,7 @@ void read_rakefile(char *rakefile){
     int actionnum = -1;
     int nwords;
 
-
-    while (fgets (buffer, BUFFSIZE, fptr))
+    while (fgets (buffer, 12, fptr))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
         
@@ -60,21 +56,27 @@ void read_rakefile(char *rakefile){
             
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
-
                 char **splitreqs = strsplit(buffer, &nwords);
                 actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
-                int currsize = sizeof(actionsets[setnum][actionnum-1]);
                 
                 for (int x = 1; x < nwords; x++)
                 {
                     actionsets[setnum][actionnum-1].requirementnum++;
                     actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
                     actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
+                    if(longest_requirements_line > BUFFSIZE)
+                    {
+                        //do some shit idk
+                    }
                 }
-                
             }
             else
             {
+
+                if(total_actions_count > BUFFSIZE)
+                {
+                    //do some shit idk
+                }
                 strcpy(actionsets[setnum][actionnum].actionCommand, trimwhitespace(buffer));
                 actionsets[setnum][actionnum].requirementnum = 0;
                 actionnum++;
@@ -98,7 +100,12 @@ void read_rakefile(char *rakefile){
             }
             else if (strstr(buffer, ":"))
             {
-                if (setnum != -1) {
+                if(total_actionset_count > BUFFSIZE)
+                {
+                    //do some shit idk
+                }
+                if (setnum != -1) 
+                {
                     actioncounts[setnum] = actionnum;
                 }
                 setnum++;
@@ -137,9 +144,9 @@ void read_rakefile(char *rakefile){
 
 int main(int argc, char* argv[]) {
     extract_line_data(argv[1]);
-    printf("total_actionset_lines: %d\n", total_actionset_count);
-    printf("total_actions_length: %d\n", total_actions_count);
-    printf("longest_requirements_line: %d\n", longest_requirements_line);
+    // printf("total_actionset_lines: %d\n", total_actionset_count);
+    // printf("total_actions_length: %d\n", total_actions_count);
+    // printf("longest_requirements_line: %d\n", longest_requirements_line);
     read_rakefile(argv[1]);
 
     //for(int i = 0; i < 10; i++)
