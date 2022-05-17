@@ -1,12 +1,14 @@
 # A typical Rakefile
 
 PORT  = 6238
-HOSTS = localhost localhost:6239 localhost:6240
+HOSTS = localhost #localhost:6239 localhost:6240
 
 actionset1:
+	ls Rakefile not-a-file
 	remote-true
-	remote-echo hi
-	remote-echo starting actionset1 action 3
+	remote-ls Rakefile not-a-file
+	echo starting actionset1 action 3
+		requires test1 test2 test3
 	remote-echo starting actionset1 action 4
 	remote-echo starting actionset1 action 5
 	#remote-cc [optional-flags] -c program.c

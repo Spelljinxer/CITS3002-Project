@@ -29,15 +29,14 @@ def quote_servers(index):
 
         sock = socket.socket()
         sock.connect((host, portnum))
-        try:
-            if(len(actionsets[0][index] > 1)):
+
+        if len(actionsets[0][index]) > 1:
                 requirements = " ".join(actionsets[0][index][1:])
-        except:
+        else:
             requirements = "None"
-        print("requirements: ", requirements)
-        message = "quote,"
-        message += requirements
-        #print("message is: ", message)
+
+        print("\tRequirements:", requirements)
+        message = "quote," + host + "," + str(portnum) + "," + requirements
         sock.sendall(message.encode())
         connections.append(sock)
 
@@ -47,14 +46,15 @@ def quote_servers(index):
         for sock in ready:
             data = sock.recv(1024)
             if data:
-                data = data.decode().split(",")
-                
-                data[1] = int(data[1])
-                cost = int(data[2])
+                data = data.decode().rsplit(",", 1)
+
+                sockinfo = data[0].split(",")
+                sockinfo = (sockinfo[0],int(sockinfo[1]))
+                cost = int(data[1])
 
                 if (cost < min_cost):
                     min_cost = cost
-                    min_sock = tuple(data[0:2])
+                    min_sock = sockinfo
 
                 sock.close()
                 connections.remove(sock)
@@ -104,46 +104,53 @@ def parse_rakefile():
                         actionsets.append([])
 
 
-
 def process_actions():
     global port
     global hosts
     global actionsets
 
-    
-    for actionset in actionsets:
+    # Iterates through every actionset in the parsed Rakefile data.
+    for s_index, actionset in enumerate(actionsets):
         shit = False
         connections = []
-        
-        for index, action in enumerate(actionset):
+
+        # Iterates through every action in the current actionset, connecting to a host server to execute it.
+        for a_index, action in enumerate(actionset):
+            # Selects the action command in the array for the action. (subsequent elemements are its requirements)
             curraction = action[0]
 
+            # Executes remote actions on the localhost. Non-remote actions are executed on the lowest costing server,
+            # determined via quote_servers().
             if (action[0][:7] == "remote-"):
                 curraction = curraction[7:]
-                print("Remotely executing " + curraction)
+                print("R-OUTGOING--> " + curraction)
                 # TODO: confirm if this is true
                 sock = socket.socket()
                 sock.connect(('localhost', int(port)))
             else:
-                #curraction = curraction[]
-                print("Executing " + curraction)
-                sockinfo = quote_servers(index)
-                print("sockinfo:", sockinfo)
+                # curraction = curraction[]
+                print("OUTGOING--> " + curraction)
+                sockinfo = quote_servers(a_index)
                 sock = socket.socket()
                 sock.connect(sockinfo)
-                
 
+            # Data is sent to the connected socket and the socket is stored in a list of open connections.
             message = "action," + curraction
             sock.sendall(message.encode())
             connections.append(sock)
 
+        print("")
+        # Iterates through every socket connected to a server, checking if any data is ready to be received.
         while connections:
             ready, empty, error = select.select(connections, [], connections)
             for sock in ready:
+                # For each socket, the initial data payload is first read.
+                # "datasize,exitcode,stdout,stderr,filecount"
+                # stdout/stderr = 1 when they are present
                 data_left = float('inf')
                 f_data = ""
-                data_exitcode = 0
-                
+                extra_data = ""
+
                 while data_left > 0:
                     data = sock.recv(1024)
                     if data:
@@ -151,24 +158,94 @@ def process_actions():
                         if data_left == float('inf'):
                             data = data.split(",")
                             data_left = int(data[0])
-                            data_exitcode = int(data[1])
-                            data = "".join(data[2:])
+                            data = ",".join(data[1:])
 
-                        data_left -= len(data)
+                        # If this is true, some additional data was sent through.
+                        if len(data) > data_left:
+                            extra_data = data[data_left:]
+                            data = data[:data_left]
+                            data_left = 0
+                        else:
+                            data_left -= len(data)
+
                         f_data += data
-                        #print("Bytes left:", data_left)
-                        print("INCOMING<--", f_data)
-                #print("Exitcode:", data_exitcode)
-                if (data_exitcode != 0):
+
+                f_data = f_data.split(",")
+                data_exitcode = int(f_data[0])
+                data_stdout = int(f_data[1])
+                data_stderr = int(f_data[2])
+                data_fcount = int(f_data[3])
+
+                if data_exitcode != 0:
                     shit = True
+
+                if data_stdout == 1:
+                    output, extra_data = read_data(sock, extra_data, False)
+                    if data_stderr == 1:
+                        output = "".join(output.rsplit('\n', output.count('\n')))
+                    print("OUTPUT--> " + output)
+
+                if data_stderr == 1:
+                    output, extra_data = read_data(sock, extra_data, False)
+                    print("ERROR--> " + output)
+
+                for files in range(0, data_fcount):
+                    extra_data = read_data(sock, extra_data)
 
                 sock.close()
                 connections.remove(sock)
 
-        if(shit):
-            print("shit == True")
-            break        
-          
-parse_rakefile()
+        # Shit happened.
+        if (shit):
+            print("TERMINATED--> actionset " + str(s_index + 1))
+            break
 
+def read_data(sock, extra_data, is_file=True):
+    data_left = float('inf')
+    f_data = ""
+
+    if extra_data:
+        extra_data = extra_data.split(",")
+        data_left = int(extra_data[0])
+        f_data = ",".join(extra_data[1:])
+
+        if len(f_data) > data_left:
+            extra_data = f_data[data_left:]
+            f_data = f_data[:data_left]
+            data_left = 0
+
+        else:
+            extra_data = ""
+            data_left -= len(f_data)
+
+    while data_left > 0:
+        data = sock.recv(1024)
+        if data:
+            data = data.decode()
+            if data_left == float('inf'):
+                data = data.split(",")
+                data_left = int(data[0])
+                data = ",".join(data[1:])
+
+            if len(data) > data_left:
+                extra_data = data[data_left:]
+                data = data[:data_left]
+                data_left = 0
+            else:
+                data_left -= len(data)
+
+            f_data += data
+
+    #TODO: For debugging purposes.
+    #df_data = "".join(f_data.rsplit('\n', f_data.count('\n')))
+
+    if not is_file: return f_data, extra_data
+    else:
+        f_data = f_data.split(",")
+        file = open(f_data[0],'w')
+        file.write(f_data[1])
+        file.close()
+        return extra_data
+
+parse_rakefile()
 process_actions()
