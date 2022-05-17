@@ -19,6 +19,7 @@
 
 char buffer[BUFFSIZE];
 
+int total_lines = 0;
 int total_actionset_count = 0;
 int total_actions_count = 0;
 int longest_requirements_line = 0;
@@ -65,6 +66,10 @@ void extract_line_data(char *rakefile)
     while(fgets(buffer, BUFFSIZE, fp))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0; //trim comments
+        if(strlen(buffer) > 1)
+        {
+            total_lines++;
+        }
         
         if(StartsWith(buffer, "\t")) //ACTIONS
         {
@@ -99,6 +104,5 @@ void extract_line_data(char *rakefile)
         }
     fclose(fp);
 }
-
 
 
