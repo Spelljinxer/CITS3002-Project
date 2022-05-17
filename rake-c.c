@@ -8,19 +8,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include "strsplit.c"
+#include "c-client.h"
 
 
-#define BUFFSIZE 100
 //-------------------------------------------------------------------------
 
-char buffer[BUFFSIZE];
 
 char hosts[][BUFFSIZE] = {};
 
@@ -41,31 +34,7 @@ int actioncounts[BUFFSIZE];
 // actionsets[1][actioncounts[1]] will be the max length for the second array of the second index
 // requirements are already dynamic, so there's no need to change it
 
-bool StartsWith(const char *a, const char *b)
-{
-    if(strncmp(a, b, strlen(b)) == 0) return 1;
-    return 0;
-}
 
-char *trimwhitespace(char *str)
-{
-    char *end;
-
-    // Trim leading space
-    while(isspace((unsigned char)*str)) str++;
-
-    if(*str == 0)  // All spaces?
-        return str;
-
-    // Trim trailing space
-    end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;
-
-    // Write new null terminator character
-    end[1] = '\0';
-
-    return str;
-}
 
 
 void read_rakefile(char *rakefile){
@@ -85,22 +54,24 @@ void read_rakefile(char *rakefile){
     while (fgets (buffer, BUFFSIZE, fptr))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
-
+        
         if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
         {
-
+            
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
 
                 char **splitreqs = strsplit(buffer, &nwords);
                 actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
-
+                int currsize = sizeof(actionsets[setnum][actionnum-1]);
+                
                 for (int x = 1; x < nwords; x++)
                 {
                     actionsets[setnum][actionnum-1].requirementnum++;
                     actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
                     actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
                 }
+                
             }
             else
             {
@@ -146,25 +117,29 @@ void read_rakefile(char *rakefile){
 //--------------------------------------------------------------------------------------------------------------------------
 
 
-void send_message(int sock, int valread, char buffer[], char* message)
-{
-    printf("Sending message from C Client...\n");
-    send(sock , message, strlen(message) , 0 );
-    valread = read(sock, buffer, 1024);
-    printf("Received the message: %s\n", buffer);
-}
+// void send_message(int sock, int valread, char buffer[], char* message)
+// {
+//     printf("Sending message from C Client...\n");
+//     send(sock , message, strlen(message) , 0 );
+//     valread = read(sock, buffer, 1024);
+//     printf("Received the message: %s\n", buffer);
+// }
 
-void quote_servers()
-{
-    float placeholder = 'inf';
-    int min_cost = (int) placeholder;
+// void quote_servers()
+// {
+//     float placeholder = 'inf';
+//     int min_cost = (int) placeholder;
 
-}
+// }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
 
 int main(int argc, char* argv[]) {
+    extract_line_data(argv[1]);
+    printf("total_actionset_lines: %d\n", total_actionset_count);
+    printf("total_actions_length: %d\n", total_actions_count);
+    printf("longest_requirements_line: %d\n", longest_requirements_line);
     read_rakefile(argv[1]);
 
     //for(int i = 0; i < 10; i++)
@@ -191,33 +166,33 @@ int main(int argc, char* argv[]) {
              }
          }
      }
-    quote_servers();
-    while (true) {
-        int sock = 0, valread;
-        struct sockaddr_in serv_addr;
-        char *message = "Hello from C Client";
-        char buffer[BUFFSIZE] = {0};
+    // quote_servers();
+    // while (true) {
+    //     int sock = 0, valread;
+    //     struct sockaddr_in serv_addr;
+    //     char *message = "Hello from C Client";
+    //     char buffer[BUFFSIZE] = {0};
 
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-            printf("\n Socket creation error \n");
-            return -1;
-        }
+    //     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    //         printf("\n Socket creation error \n");
+    //         return -1;
+    //     }
 
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_port = htons(portnumber);
+    //     serv_addr.sin_family = AF_INET;
+    //     serv_addr.sin_port = htons(portnumber);
 
-        if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-            printf("\nInvalid address/ Address not supported \n");
-            return -1;
-        }
+    //     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+    //         printf("\nInvalid address/ Address not supported \n");
+    //         return -1;
+    //     }
 
-        if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            printf("\nConnection Failed \n");
-            return -1;
-        }
+    //     if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    //         printf("\nConnection Failed \n");
+    //         return -1;
+    //     }
 
-        send_message(sock, valread, buffer, message);
-    }
+    //     send_message(sock, valread, buffer, message);
+    // }
 
 
     return 0;
