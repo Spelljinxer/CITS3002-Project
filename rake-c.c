@@ -132,12 +132,73 @@ void read_rakefile(char *rakefile){
 //     printf("Received the message: %s\n", buffer);
 // }
 
-// void quote_servers()
-// {
-//     float placeholder = 'inf';
-//     int min_cost = (int) placeholder;
+//No its not done, no it doesnt work, c makes me wanna kill myself
+int quote_servers(int index){
+    int connections [BUFFSIZE];
+    float min_cost = __FLT_MAX__;
+    char* requirements;
+    for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
+    {
+        int port = portnumber;
+        printf("this is the value of i: %d\n", i);
+        if (count_char(hosts[0][i], ':') > 0)
+        {
+            port = atoi(strtok(hosts[0][i], ":"));
+            hosts[0][i] = strtok(hosts[0][i], ":");
+        }
+        int cumsock;
+        cumsock = socket(AF_INET , SOCK_STREAM , 0);
+        if (cumsock == -1){
+            printf("Could not create socket\n");
+        }
+        struct sockaddr_in server;
+        struct sockaddr_in {
+            short sin_family;
+            unsigned short sin_port;
+            struct in_addr sin_addr;
+            char sin_zero[8];
+        };        
+        struct in_addr {
+            unsigned long s_addr;
+        };
+        server.sin_addr.s_addr = inet_addr(hosts[0][i]);
+        server.sin_family = AF_INET;
+        server.sin_port = htons(port);
 
-// }
+        if(connect(cumsock, (struct sockaddr *)&server, sizeof(server)) < 0){
+            printf("Connect failed. Error\n");
+            return;
+        }
+        else{
+            printf("Connected\n");
+        }
+
+        if(actionsets[0][index].requirements > 1){
+            requirements = " %s", actionsets[0][index].requirements[0];
+        }
+        else{
+            requirements = "None";
+        }
+
+        printf("\tRequirements: %s\n", requirements);
+        char* message = "quote,%s,%d,%s", hosts[0][i], port, requirements;
+        //socket shit
+        if(send(cumsock , message , strlen(message) , 0) < 0){
+            printf("Send failed\n");
+            return;
+        }
+        else{
+            printf("Message sent\n");
+        }
+        connections[i] = cumsock;
+    }
+    while(connections){
+        //select can select this dick in its mouth
+        int select_return = select(1, connections, NULL, NULL, 5);
+        break;
+    }
+    return 0;
+}
 
 //--------------------------------------------------------------------------------------------------------------------------
 
