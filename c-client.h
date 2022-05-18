@@ -12,7 +12,9 @@
 #include <ctype.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/select.h>
 #include <unistd.h>
+#include <math.h>
 
 //-----------------------------------------------------------------------------------------------------
 #define BUFFSIZE 1024
@@ -52,6 +54,78 @@ char *trimwhitespace(char *str)
 
     return str;
 }
+
+char* get_first_seven_chars(char *s)
+{
+    char *result = malloc(sizeof(char) * 7);
+    strncpy(result, s, 7);
+    return result;
+}
+
+char *concatenate_strings(char *s1, char *s2)
+{
+    char *result = malloc(sizeof(char) * (strlen(s1) + strlen(s2) + 1));
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
+void test_socket_create(int socket)
+{
+    if (socket == -1)
+    {
+        printf("Could not create socket\n");
+        exit(0);
+    }
+}
+
+void test_socket_address(char* hostname, struct sockaddr_in serv_ddr)
+{
+    if (inet_pton(AF_INET, hostname, &serv_ddr.sin_addr) <= 0)
+    {
+        printf("\nInvalid address/ Address not supported \n");
+        exit(1);
+    }
+}
+
+void test_socket_connecton(int socket, struct sockaddr_in server)
+{
+    if(connect(socket, (struct sockaddr *)&server, sizeof(server)) < 0)
+    {
+        printf("Could not connect to server\n");
+        exit(0);
+    }
+    else
+    {
+        printf("Connected to server\n");
+    }
+}
+
+char** split_string_to_array(char *string_to_split, const char* delim)
+{
+    char **result = malloc(sizeof(char*) * strlen(string_to_split) + 1);
+    int index = 0;
+    char*split_char = strtok(string_to_split, delim);
+    while(split_char != NULL)
+    {
+        result[index] = split_char;
+        split_char = strtok(NULL, delim);
+        index++;
+    }
+    return result;
+    free(result);
+}
+
+int get_number_of_elements(char ** arr)
+{
+    int i = 0;
+    while(arr[i] != NULL)
+    {
+        i++;
+    }
+    return i;
+}
+
 
 void extract_line_data(char *rakefile)
 {
@@ -101,8 +175,11 @@ void extract_line_data(char *rakefile)
             }
         }
 
-        }
+    }
     fclose(fp);
+    // printf("total_actionset_lines: %d\n", total_actionset_count);
+    // printf("total_actions_length: %d\n", total_actions_count);
+    // printf("longest_requirements_line: %d\n", longest_requirements_line);
 }
 
 
