@@ -200,17 +200,114 @@ int quote_servers(int index){
     return 0;
 }
 
+//WHY DO WE HAVE TO WRITE IN C?????
+//printf("%s\n", actionsets[s_index][a_index].actionCommand);
+void process_actions()
+{
+    printf("\n-------TESTING PROCESS ACTIONS-----\n");
+    for (int s_index = 0; s_index < setcount; s_index++)
+    {
+        bool shit = false;
+        char connections[BUFFSIZE][BUFFSIZE];
+        for (int a_index = 0; a_index < actioncounts[s_index]; a_index++)
+        {
+            char* curraction = actionsets[s_index][a_index].actionCommand;
+            char*remote = get_first_seven_chars(curraction);
+            if(strlen(curraction) > 0)
+            {
+                if (strcmp(remote, "remote-") == 0)
+                { 
+                    printf("R-OUTGOING--> %s\n", curraction);
+                    int sock = socket(AF_INET, SOCK_STREAM, 0);
+                    test_socket_create(sock);
+                    struct sockaddr_in server;
+                    struct sockaddr_in serv_addr;
+                    server.sin_family = AF_INET;
+                    server.sin_port = htons(portnumber);
+
+                    //test_socket_address("localhost", serv_addr);
+                    //test_socket_connecton(sock, server);
+
+                    // sock = socket.socket()
+                    // sock.connect(('localhost', int(port)))
+                }
+                else
+                {
+                    printf("OUTGOING--> %s\n", curraction);
+                    float sockinfo = quote_servers(a_index);
+                    int sock = socket(AF_INET, SOCK_STREAM, 0);
+                    test_socket_create(sock);
+                    // sock = socket.socket()
+                    // sock.connect(sockinfo)
+                }
+
+                char* act = "action,";
+                char* message = concatenate_strings(act, curraction);
+                //printf("message is %s\n", message);
+                //sock shit send sock.sendall(message.encode())
+                //strcpy(connections[s_index],sock);
+            }
+
+        }
+        printf("\n"); //next actionset
+
+        while(connections)
+        {
+            break;
+        }
+    }
+}
+
+void read_data(int sock, char *extra_data, bool is_File)
+{
+    float data_left = INFINITY;
+    char **extra_data_array;
+    char *f_data = malloc(sizeof(char) * strlen(extra_data) + 1);
+    if(extra_data)
+    {
+        extra_data_array = split_string_to_array(extra_data, ",");
+        data_left = atoi(extra_data_array[0]);
+        int new_extra_elements = get_number_of_elements(extra_data_array);
+        for(int i = 1; i < new_extra_elements; i++)
+        {
+            strcat(f_data, extra_data_array[i]);
+            strcat(f_data, ",");
+        }
+        f_data[strlen(f_data) - 1] = '\0';
+
+        if(strlen(f_data) > data_left)
+        {
+
+            data_left = 0;
+        }
+        else
+        {
+
+        }
+    }
+
+    while(data_left > 0)
+    {
+        //data = sock.recv(1024)
+        //if(data)
+        // {
+
+        // }
+    }
+    printf("f_data : %s\n", f_data);
+}
+
 //--------------------------------------------------------------------------------------------------------------------------
 
 
 int main(int argc, char* argv[]) {
     extract_line_data(argv[1]);
-    // printf("total_actionset_lines: %d\n", total_actionset_count);
-    // printf("total_actions_length: %d\n", total_actions_count);
-    // printf("longest_requirements_line: %d\n", longest_requirements_line);
     read_rakefile(argv[1]);
-
-    //for(int i = 0; i < 10; i++)
+    process_actions();
+    bool is_File = true;
+    char extra_data[BUFFSIZE] = "29,split,this,message,into multiple strings,rebuild it,now";
+    read_data(0, extra_data, is_File);
+    //for(int i = 0; i < 1 0; i++)
     //{
         // for(int j = 0; j < 10; j++)
         // {
@@ -224,6 +321,7 @@ int main(int argc, char* argv[]) {
          //    }
        //  }
      //}
+     printf("--------------------REAL DATA------------------------\n");
      for(int i = 0; i < 10; i++)
      {
          for(int j = 0; j < actioncounts[i]; j++)
