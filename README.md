@@ -59,4 +59,4 @@ Project Description:
 
 
 queen
-<img src="https://static.wikia.nocookie.net/hoducks/images/b/b9/Azure_Empyrea.png/revision/latest?cb=20201226082505">
+<img src="https://static.wikia.nocookie.net/hoducks/images/d/d8/Herrscher_of_Flamescion.png/revision/latest?cb=20210930042045">
