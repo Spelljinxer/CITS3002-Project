@@ -258,43 +258,93 @@ void process_actions()
     }
 }
 
-void read_data(int sock, char *extra_data, bool is_File)
+//WELL THE FIRST IF(EXTRA_DATA) PASSES CORRECTLY
+//IDK HOW TF TO TEST THE WHILE LOOP THAT READS GG TO THAT
+//ALSO KIANA HOV KILLS HIMEKO BUT SHE LATERS BECOMES FLAMESCION POG
+char* read_data(int sock, char *extra_data, bool is_File)
 {
     float data_left = INFINITY;
-    char **extra_data_array;
+    float inf_check = INFINITY;
     char *f_data = malloc(sizeof(char) * strlen(extra_data) + 1);
     if(extra_data)
     {
-        extra_data_array = split_string_to_array(extra_data, ",");
-        data_left = atoi(extra_data_array[0]);
-        int new_extra_elements = get_number_of_elements(extra_data_array);
-        for(int i = 1; i < new_extra_elements; i++)
-        {
-            strcat(f_data, extra_data_array[i]);
-            strcat(f_data, ",");
-        }
-        f_data[strlen(f_data) - 1] = '\0';
-
+        char *newstring = malloc(sizeof(char) * strlen(extra_data) + 1);
+        strcpy(newstring, extra_data);
+        
+        char* first_element = strtok(newstring, ",");
+        data_left = atof(first_element);
+        
+        int comma_index = get_char_index(extra_data, ',') + 1;
+        f_data = strdup(&extra_data[comma_index]);
+        
+        
         if(strlen(f_data) > data_left)
         {
+            extra_data = realloc(f_data, sizeof(char) * strlen(f_data) + 1);
+            extra_data = splice_string(f_data, data_left, strlen(f_data));
 
+            f_data = splice_string(f_data, 0, (int) data_left);
             data_left = 0;
         }
         else
         {
-
+            extra_data = " ";
+            data_left -= strlen(f_data);
         }
     }
-
     while(data_left > 0)
     {
-        //data = sock.recv(1024)
-        //if(data)
-        // {
+        char buffer_data[1024] = { 0 };
+        int valread = recv(sock, buffer_data, 1024, 0);
+        if(valread > 0)
+        {
+            if(data_left == inf_check)
+            {
+                char *newstring = malloc(sizeof(char) * strlen(buffer_data) + 1);
+                char *first_element = strtok(newstring, ",");
+                data_left = atof(first_element);
+                int comma_index = get_char_index(buffer_data, ',') + 1;
+                strcpy(buffer_data, (&buffer_data[comma_index]));
+            }
+            if(strlen(buffer_data) > data_left)
+            {
+                extra_data = realloc(extra_data, sizeof(char) * strlen(extra_data) + 1);
+                extra_data = splice_string(buffer_data, data_left, strlen(extra_data));
 
-        // }
+                char* buff_spliced = splice_string(buffer_data, 0, strlen(buffer_data));
+                strcpy(buffer_data, buff_spliced);
+                data_left = 0;
+            }
+            else
+            {
+                data_left -= strlen(buffer_data);
+            }
+            strcat(f_data, buffer_data);
+        }
     }
-    printf("f_data : %s\n", f_data);
+    if(!is_File)
+    {
+        return extra_data;
+    }
+    else
+    {
+        char *filename = malloc(sizeof(char) * strlen(f_data) + 1);
+        strcpy(filename, f_data);
+        filename = strtok(filename, ",");
+
+        int first_comma = 0;
+        while(f_data[first_comma] != ',')
+        {
+            first_comma++;
+        }
+        FILE *fptr = fopen(filename, "w");
+        for(int i = first_comma+1; i < strlen(f_data); i++)
+        {
+            fprintf(fptr, "%c", f_data[i]);
+        }
+        fclose(fptr);
+        return extra_data;
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
@@ -305,8 +355,8 @@ int main(int argc, char* argv[]) {
     read_rakefile(argv[1]);
     process_actions();
     bool is_File = true;
-    char extra_data[BUFFSIZE] = "29,split,this,message,into multiple strings,rebuild it,now";
-    read_data(0, extra_data, is_File);
+    char *extra_data = "29, split, this, message, into, parts";
+    char *d = read_data(0, extra_data, is_File);
     //for(int i = 0; i < 1 0; i++)
     //{
         // for(int j = 0; j < 10; j++)
