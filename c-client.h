@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <unistd.h>
@@ -75,7 +76,7 @@ void test_socket_create(int socket)
     if (socket == -1)
     {
         printf("Could not create socket\n");
-        exit(0);
+        exit(1);
     }
 }
 
@@ -93,7 +94,7 @@ void test_socket_connecton(int socket, struct sockaddr_in server)
     if(connect(socket, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
         printf("Could not connect to server\n");
-        exit(0);
+        exit(1);
     }
     else
     {
@@ -103,17 +104,27 @@ void test_socket_connecton(int socket, struct sockaddr_in server)
 
 char** split_string_to_array(char *string_to_split, const char* delim)
 {
+    char *newstring;
+    strcpy(newstring, string_to_split);
     char **result = malloc(sizeof(char*) * strlen(string_to_split) + 1);
     int index = 0;
-    char*split_char = strtok(string_to_split, delim);
+    char*split_char = strtok(newstring, delim);
     while(split_char != NULL)
     {
-        result[index] = split_char;
+        result[index] = malloc(sizeof(char) * strlen(split_char) + 1);
+        strcpy(result[index], split_char);
         split_char = strtok(NULL, delim);
         index++;
     }
     return result;
-    free(result);
+}
+
+char *splice_string(char* string, int start, int end)
+{
+    char *result = malloc(sizeof(char) * (end - start + 1));
+    strncpy(result, &string[start], end - start);
+    result[end - start] = '\0';
+    return result;
 }
 
 int get_number_of_elements(char ** arr)
@@ -124,6 +135,16 @@ int get_number_of_elements(char ** arr)
         i++;
     }
     return i;
+}
+
+int get_char_index(char *str, int delim)
+{
+    int first_occurence = 0;
+    while(str[first_occurence] != delim)
+    {
+        first_occurence++;
+    }
+    return first_occurence;
 }
 
 
