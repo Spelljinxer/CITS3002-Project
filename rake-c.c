@@ -7,15 +7,16 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include "strsplit.c"
 #include "c-client.h"
 //-------------------------------------------------------------------------
 
+char buffer[BUFFSIZE];
 
 char hosts[][BUFFSIZE] = {};
 
 int portnumber;
+
 
 struct {
     char actionCommand[BUFFSIZE];
@@ -31,8 +32,7 @@ int actioncounts[BUFFSIZE];
 // actionsets[1][actioncounts[1]] will be the max length for the second array of the second index
 // requirements are already dynamic, so there's no need to change it
 
-//-------------------------------------------------------------------------
-
+//---------------------------------------------------------------------------------------------
 
 void read_rakefile(char *rakefile){
     FILE *fptr = fopen(rakefile, "r");
@@ -47,36 +47,29 @@ void read_rakefile(char *rakefile){
     int actionnum = -1;
     int nwords;
 
-    while (fgets (buffer, 12, fptr))
+
+    while (fgets (buffer, BUFFSIZE, fptr))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
-        
+
         if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
         {
-            
+
             if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
             {
+
                 char **splitreqs = strsplit(buffer, &nwords);
                 actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
-                
+
                 for (int x = 1; x < nwords; x++)
                 {
                     actionsets[setnum][actionnum-1].requirementnum++;
                     actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
                     actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
-                    if(longest_requirements_line > BUFFSIZE)
-                    {
-                        //do some shit idk
-                    }
                 }
             }
             else
             {
-
-                if(total_actions_count > BUFFSIZE)
-                {
-                    //do some shit idk
-                }
                 strcpy(actionsets[setnum][actionnum].actionCommand, trimwhitespace(buffer));
                 actionsets[setnum][actionnum].requirementnum = 0;
                 actionnum++;
@@ -100,12 +93,7 @@ void read_rakefile(char *rakefile){
             }
             else if (strstr(buffer, ":"))
             {
-                if(total_actionset_count > BUFFSIZE)
-                {
-                    //do some shit idk
-                }
-                if (setnum != -1) 
-                {
+                if (setnum != -1) {
                     actioncounts[setnum] = actionnum;
                 }
                 setnum++;
@@ -136,80 +124,89 @@ struct sockinfo
 {
     char *host; //THIS HAS TO BE TURNED INTO AN ARRAY OF HOSTNAMES
     int port; //THIS HAS TO BE TURNED INTO AN ARRAY OF PORTNUMS CORRESPONDING TO HOSTNAME
+    int port_array[BUFFSIZE];
+    char **host_array;
 };
 
-//No its not done, no it doesnt work, c makes me wanna kill myself
-struct sockinfo quote_servers(int index){
+struct sockinfo quote_servers(int index)
+{
+    printf("-------TESTING QUOTE SERVERS-----------\n");
+
+    struct sockinfo quoteinfo;
     int connections [BUFFSIZE];
-    float min_cost = __FLT_MAX__;
-    char* requirements;
+    float min_cost = INFINITY;
+    
+    
+
     for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
     {
-        int port = portnumber;
-        printf("this is the value of i: %d\n", i);
-        if (count_char(hosts[0][i], ':') > 0)
+        int portnum = portnumber;
+        
+        int sock_socket = 0, valueread, client_socket;
+        struct sockaddr_in serv_addr;
+        sock_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if(strlen(hosts[i]) > 0 )
         {
-            port = atoi(strtok(hosts[0][i], ":"));
-            hosts[0][i] = strtok(hosts[0][i], ":");
-        }
-        int cumsock;
-        cumsock = socket(AF_INET , SOCK_STREAM , 0);
-        if (cumsock == -1){
-            printf("Could not create socket\n");
-        }
-        struct sockaddr_in server;
-        struct sockaddr_in {
-            short sin_family;
-            unsigned short sin_port;
-            struct in_addr sin_addr;
-            char sin_zero[8];
-        };        
-        struct in_addr {
-            unsigned long s_addr;
-        };
-        server.sin_addr.s_addr = inet_addr(hosts[0][i]);
-        server.sin_family = AF_INET;
-        server.sin_port = htons(port);
+            quoteinfo.host_array = malloc(sizeof(hosts[i]));
+            quoteinfo.host_array[i] = strdup(hosts[i]);
+            quoteinfo.port_array[i] = portnum;
+            
+            if(char_counter(hosts[i], ":") > 0)
+            {
+                char *hostname = strtok(hosts[i], ":");
+                int port_split = atoi(strtok(NULL, ":"));
+                quoteinfo.host_array[i] = strdup(hostname);
+                quoteinfo.port_array[i] = port_split;
+            }
+            
+            if(strcmp(hosts[i], "localhost") == 0)
+            {
+                //IDK WHY BUT C DOESNT CONNECT 'LOCALHOST' ONLY DIRECT IP
+                quoteinfo.host_array[i] = "127.0.0.1"; 
+            }
 
-        if(connect(cumsock, (struct sockaddr *)&server, sizeof(server)) < 0){
-            printf("Connect failed. Error\n");
-            return;
-        }
-        else{
-            printf("Connected\n");
-        }
+            if (sock_socket < 0)
+            {
+                printf("Could not create socket");
+                exit(1);
+            }
+            memset(&serv_addr, '0', sizeof(serv_addr));
+            serv_addr.sin_family = AF_INET;
+            serv_addr.sin_port = htons(quoteinfo.port_array[i]);
+            if(inet_pton(AF_INET, quoteinfo.host_array[i], &serv_addr.sin_addr)<=0)
+            {
+                printf("Invalid address/ Address not supported\n");
+                exit(1);
+            }
+            if (connect(sock_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+            {
+                printf("Connection Failed\n");
+                exit(1);
+            }
+            printf("Connected to host : %s on port : %d\n", quoteinfo.host_array[i], quoteinfo.port_array[i]);
 
-        if(actionsets[0][index].requirements > 1){
-            requirements = " %s", actionsets[0][index].requirements[0];
-        }
-        else{
-            requirements = "None";
-        }
+            
+            char*quote = "quote,";
+            char *comma = ",";
 
-        printf("\tRequirements: %s\n", requirements);
-        char* message = "quote,%s,%d,%s", hosts[0][i], port, requirements;
-        //socket shit
-        if(send(cumsock , message , strlen(message) , 0) < 0){
-            printf("Send failed\n");
-            return;
+            char*message = malloc(sizeof(char) * BUFFSIZE);
+            char port_string[BUFFSIZE];
+            int port_int = quoteinfo.port_array[i];
+            sprintf(port_string, "%d", port_int);
+            concatenate_quote(message, quote, comma, hosts[i], port_string);
+            strcat(message, "None");
+            printf("OUTGOING--> %s\n", message);
+            send(sock_socket , message, strlen(message) , 0 );
         }
-        else{
-            printf("Message sent\n");
-        }
-        connections[i] = cumsock;
     }
-    while(connections){
-        //select can select this dick in its mouth
-        int select_return = select(1, connections, NULL, NULL, 5);
-        break;
-    }
+    
     struct sockinfo info;
     info.host = "127.0.0.1";
     info.port = portnumber;
     return info;                //THEY'RE JUST HARDCODED FOR NOW FOR TESTING 
+    
 }
 
-//WHY DO WE HAVE TO WRITE IN C?????
 //printf("%s\n", actionsets[s_index][a_index].actionCommand);
 void process_actions()
 {
@@ -227,6 +224,7 @@ void process_actions()
                 int sock = 0, valread, client_fd;
                 struct sockaddr_in serv_addr;
                 serv_addr.sin_family = AF_INET;
+
                 if (strcmp(remote, "remote-") == 0)
                 { 
                     printf("R-OUTGOING--> %s\n", curraction);
@@ -246,15 +244,18 @@ void process_actions()
                 else
                 {
                     printf("OUTGOING--> %s\n", curraction);
-                    struct sockinfo info = quote_servers(a_index);
-                    serv_addr.sin_port = htons(info.port);
+                    //struct sockinfo info = quote_servers(a_index);
+                    char*placeholdername = "127.0.0.1";
+                    int placeholderport = 6238;             //REMOVE THESE AND CHANGE THEM ACCORDINGLY AFTER QUOTE_SERVERS IS DONE
+                    // serv_addr.sin_port = htons(info.port);
+                    serv_addr.sin_port = htons(placeholderport);
                     sock = socket(AF_INET, SOCK_STREAM, 0);
 
                     if(sock < 0)
                     {
                         printf("\n Error : Could not create socket \n");
                     }
-                    if (inet_pton(AF_INET, info.host, &serv_addr.sin_addr) <= 0) 
+                    if (inet_pton(AF_INET, placeholdername, &serv_addr.sin_addr) <= 0) 
                     {
                         printf("\nInvalid address/ Address not supported \n");
                         exit(1);
@@ -305,7 +306,6 @@ void process_actions()
                             valread = read(connections[i], buffer, 1024);
                             printf("INCOMING<--%s\n", buffer);
                         }
-                        
                     }
                 }
             }
@@ -409,63 +409,42 @@ char* read_data(int sock, char *extra_data, bool is_File)
 int main(int argc, char* argv[]) {
     extract_line_data(argv[1]);
     read_rakefile(argv[1]);
-    process_actions();
+    //process_actions();
+    struct sockinfo info2 = quote_servers(0);
+
     bool is_File = true;
     char *extra_data = "29, split, this, message, into, parts";
     char *d = read_data(0, extra_data, is_File);
-    //for(int i = 0; i < 1 0; i++)
-    //{
-        // for(int j = 0; j < 10; j++)
-        // {
-             //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
-          //   if (actionsets[i][j].requirementnum > 0) {
-               //  for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
-
-                     //printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
-             //        printf("actionsets[%d][%d]: %s \n", i, j, &actionsets[i][j].actionCommand);
-           //      }
-         //    }
-       //  }
-     //}
+    printf("-------- REQUIREMENTS --------\n");
+    // for(int i = 0; i < 10; i++)
+    // {
+    //     for(int j = 0; j < 10; j++)
+    //     {
+    //         //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
+    //         if (actionsets[i][j].requirementnum > 0)
+    //         {
+    //             for (int z = 0; z < actionsets[i][j].requirementnum; z++) 
+    //             {
+    //                 if(strlen (actionsets[i][j].requirements[z]) > 0)
+    //                 {   
+    //                     int len = strlen(actionsets[i][j].requirements[z]);
+                        
+    //                     printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //  }
      printf("--------------------REAL DATA------------------------\n");
-     for(int i = 0; i < 10; i++)
-     {
-         for(int j = 0; j < actioncounts[i]; j++)
-         {
-             if(strlen(actionsets[i][j].actionCommand) > 0)
-             {
-                 printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
-             }
-         }
-     }
-    // quote_servers();
-    // while (true) {
-    //     int sock = 0, valread;
-    //     struct sockaddr_in serv_addr;
-    //     char *message = "Hello from C Client";
-    //     char buffer[BUFFSIZE] = {0};
-
-    //     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    //         printf("\n Socket creation error \n");
-    //         return -1;
-    //     }
-
-    //     serv_addr.sin_family = AF_INET;
-    //     serv_addr.sin_port = htons(portnumber);
-
-    //     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-    //         printf("\nInvalid address/ Address not supported \n");
-    //         return -1;
-    //     }
-
-    //     if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-    //         printf("\nConnection Failed \n");
-    //         return -1;
-    //     }
-
-    //     send_message(sock, valread, buffer, message);
-    // }
-
-
+    //  for(int i = 0; i < 10; i++)
+    //  {
+    //      for(int j = 0; j < actioncounts[i]; j++)
+    //      {
+    //          if(strlen(actionsets[i][j].actionCommand) > 0)
+    //          {
+    //              printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
+    //          }
+    //      }
+    //  }
     return 0;
 }
