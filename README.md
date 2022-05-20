@@ -37,7 +37,7 @@ Project Description:
 - [x] Execute Simple Actions on rakeserver
 - [x] Dynamic recv() sizing
 - [x] Receive errors and terminate on error
-- [ ] Send requirements to server for basic cost implementation
+- [x] Send requirements to server for basic cost implementation
 - [x] Redo entire sending of data process.
 - [x] Send stderr to clients to print
 - [ ] Have the server check if any new files were created, if so send them back to the user.
@@ -59,4 +59,4 @@ Project Description:
 
 
 queen
-<img src="https://static.wikia.nocookie.net/hoducks/images/b/b9/Azure_Empyrea.png/revision/latest?cb=20201226082505">
+<img src="https://static.wikia.nocookie.net/hoducks/images/d/d8/Herrscher_of_Flamescion.png/revision/latest?cb=20210930042045">

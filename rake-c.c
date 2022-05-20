@@ -7,17 +7,8 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include "strsplit.c"
-
-
-#define BUFFSIZE 100
+#include "c-client.h"
 //-------------------------------------------------------------------------
 
 char buffer[BUFFSIZE];
@@ -41,32 +32,7 @@ int actioncounts[BUFFSIZE];
 // actionsets[1][actioncounts[1]] will be the max length for the second array of the second index
 // requirements are already dynamic, so there's no need to change it
 
-bool StartsWith(const char *a, const char *b)
-{
-    if(strncmp(a, b, strlen(b)) == 0) return 1;
-    return 0;
-}
-
-char *trimwhitespace(char *str)
-{
-    char *end;
-
-    // Trim leading space
-    while(isspace((unsigned char)*str)) str++;
-
-    if(*str == 0)  // All spaces?
-        return str;
-
-    // Trim trailing space
-    end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;
-
-    // Write new null terminator character
-    end[1] = '\0';
-
-    return str;
-}
-
+//---------------------------------------------------------------------------------------------
 
 void read_rakefile(char *rakefile){
     FILE *fptr = fopen(rakefile, "r");
@@ -146,79 +112,338 @@ void read_rakefile(char *rakefile){
 //--------------------------------------------------------------------------------------------------------------------------
 
 
-void send_message(int sock, int valread, char buffer[], char* message)
+// void send_message(int sock, int valread, char buffer[], char* message)
+// {
+//     printf("Sending message from C Client...\n");
+//     send(sock , message, strlen(message) , 0 );
+//     valread = read(sock, buffer, 1024);
+//     printf("Received the message: %s\n", buffer);
+// }
+
+struct sockinfo
 {
-    printf("Sending message from C Client...\n");
-    send(sock , message, strlen(message) , 0 );
-    valread = read(sock, buffer, 1024);
-    printf("Received the message: %s\n", buffer);
+    char *host; //THIS HAS TO BE TURNED INTO AN ARRAY OF HOSTNAMES
+    int port; //THIS HAS TO BE TURNED INTO AN ARRAY OF PORTNUMS CORRESPONDING TO HOSTNAME
+    int port_array[BUFFSIZE];
+    char **host_array;
+};
+
+struct sockinfo quote_servers(int index)
+{
+    printf("-------TESTING QUOTE SERVERS-----------\n");
+
+    struct sockinfo quoteinfo;
+    int connections [BUFFSIZE];
+    float min_cost = INFINITY;
+    
+    
+
+    for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
+    {
+        int portnum = portnumber;
+        
+        int sock_socket = 0, valueread, client_socket;
+        struct sockaddr_in serv_addr;
+        sock_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if(strlen(hosts[i]) > 0 )
+        {
+            quoteinfo.host_array = malloc(sizeof(hosts[i]));
+            quoteinfo.host_array[i] = strdup(hosts[i]);
+            quoteinfo.port_array[i] = portnum;
+            
+            if(char_counter(hosts[i], ":") > 0)
+            {
+                char *hostname = strtok(hosts[i], ":");
+                int port_split = atoi(strtok(NULL, ":"));
+                quoteinfo.host_array[i] = strdup(hostname);
+                quoteinfo.port_array[i] = port_split;
+            }
+            
+            if(strcmp(hosts[i], "localhost") == 0)
+            {
+                //IDK WHY BUT C DOESNT CONNECT 'LOCALHOST' ONLY DIRECT IP
+                quoteinfo.host_array[i] = "127.0.0.1"; 
+            }
+
+            if (sock_socket < 0)
+            {
+                printf("Could not create socket");
+                exit(1);
+            }
+            memset(&serv_addr, '0', sizeof(serv_addr));
+            serv_addr.sin_family = AF_INET;
+            serv_addr.sin_port = htons(quoteinfo.port_array[i]);
+            if(inet_pton(AF_INET, quoteinfo.host_array[i], &serv_addr.sin_addr)<=0)
+            {
+                printf("Invalid address/ Address not supported\n");
+                exit(1);
+            }
+            if (connect(sock_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+            {
+                printf("Connection Failed\n");
+                exit(1);
+            }
+            printf("Connected to host : %s on port : %d\n", quoteinfo.host_array[i], quoteinfo.port_array[i]);
+
+            
+            char*quote = "quote,";
+            char *comma = ",";
+
+            char*message = malloc(sizeof(char) * BUFFSIZE);
+            char port_string[BUFFSIZE];
+            int port_int = quoteinfo.port_array[i];
+            sprintf(port_string, "%d", port_int);
+            concatenate_quote(message, quote, comma, hosts[i], port_string);
+            printf("OUTGOING--> %s\n", message);
+            send(sock_socket , message, strlen(message) , 0 );
+        }
+    }
+    
+    struct sockinfo info;
+    info.host = "127.0.0.1";
+    info.port = portnumber;
+    return info;                //THEY'RE JUST HARDCODED FOR NOW FOR TESTING 
+    
 }
 
-void quote_servers()
+//printf("%s\n", actionsets[s_index][a_index].actionCommand);
+void process_actions()
 {
-    float placeholder = 'inf';
-    int min_cost = (int) placeholder;
+    printf("\n-------TESTING PROCESS ACTIONS-----\n");
+    for (int s_index = 0; s_index < setcount; s_index++)
+    {
+        bool shit = false;
+        int connections[BUFFSIZE];
+        for (int a_index = 0; a_index < actioncounts[s_index]; a_index++)
+        {
+            char* curraction = actionsets[s_index][a_index].actionCommand;
+            char*remote = get_first_seven_chars(curraction);
+            if(strlen(curraction) > 0)
+            {
+                int sock = 0, valread, client_fd;
+                struct sockaddr_in serv_addr;
+                serv_addr.sin_family = AF_INET;
 
+                if (strcmp(remote, "remote-") == 0)
+                { 
+                    printf("R-OUTGOING--> %s\n", curraction);
+                    serv_addr.sin_port = htons(portnumber);
+                    sock = socket(AF_INET, SOCK_STREAM, 0);
+                    if(sock < 0)
+                    {
+                        printf("\n Error : Could not create socket \n");
+                    }
+                    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) 
+                    {
+                        printf("\nInvalid address/ Address not supported \n");
+                        exit(1);
+                    }
+                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr));
+                }
+                else
+                {
+                    printf("OUTGOING--> %s\n", curraction);
+                    //struct sockinfo info = quote_servers(a_index);
+                    char*placeholdername = "127.0.0.1";
+                    int placeholderport = 6238;             //REMOVE THESE AND CHANGE THEM ACCORDINGLY AFTER QUOTE_SERVERS IS DONE
+                    // serv_addr.sin_port = htons(info.port);
+                    serv_addr.sin_port = htons(placeholderport);
+                    sock = socket(AF_INET, SOCK_STREAM, 0);
+
+                    if(sock < 0)
+                    {
+                        printf("\n Error : Could not create socket \n");
+                    }
+                    if (inet_pton(AF_INET, placeholdername, &serv_addr.sin_addr) <= 0) 
+                    {
+                        printf("\nInvalid address/ Address not supported \n");
+                        exit(1);
+                    }
+                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr));         
+                }
+
+                char *action = "action,";
+                char *msg = malloc(strlen(action) + strlen(curraction) + 1);
+                strcpy(msg, action);
+                strcat(msg, curraction);
+                send(sock, msg, strlen(msg), 0);
+                connections[s_index] = sock;
+            }
+
+        }
+        printf("\n"); //next actionset
+        //TBH IDK WTF I DID OR WTF ITS EVEN DOING BUT IT WORKS FOR NOW
+        while(connections)
+        {
+            fd_set readfds;
+            int max_fd = 0;
+            FD_ZERO(&readfds);
+            for (int i = 0; i < setcount; i++)
+            {
+                if (connections[i] > 0)
+                {
+                    FD_SET(connections[i], &readfds);
+                    max_fd = connections[i] > max_fd ? connections[i] : max_fd;
+                }
+            }
+            int activity = select(max_fd + 1, &readfds, NULL, NULL, NULL);
+            if ((activity < 0) && (errno!=EINTR)) 
+            {
+                printf("select error");
+            }
+            for (int i = 0; i < setcount; i++)
+            {
+                if (connections[i] > 0)
+                {
+                    if (FD_ISSET(connections[i], &readfds))
+                    {
+                        char buffer[1024] = {0};
+                        int valread;
+                        valread = read(connections[i], buffer, 1024);
+                        if(valread > 0)
+                        {
+                            valread = read(connections[i], buffer, 1024);
+                            printf("INCOMING<--%s\n", buffer);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
+//WELL THE FIRST IF(EXTRA_DATA) PASSES CORRECTLY
+//IDK HOW TF TO TEST THE WHILE LOOP THAT READS GG TO THAT
+//ALSO KIANA HOV KILLS HIMEKO BUT SHE LATERS BECOMES FLAMESCION POG
+char* read_data(int sock, char *extra_data, bool is_File)
+{
+    float data_left = INFINITY;
+    float inf_check = INFINITY;
+    char *f_data = malloc(sizeof(char) * strlen(extra_data) + 1);
+    if(extra_data)
+    {
+        char *newstring = malloc(sizeof(char) * strlen(extra_data) + 1);
+        strcpy(newstring, extra_data);
+        
+        char* first_element = strtok(newstring, ",");
+        data_left = atof(first_element);
+        
+        int comma_index = get_char_index(extra_data, ',') + 1;
+        f_data = strdup(&extra_data[comma_index]);
+        
+        
+        if(strlen(f_data) > data_left)
+        {
+            extra_data = realloc(f_data, sizeof(char) * strlen(f_data) + 1);
+            extra_data = splice_string(f_data, data_left, strlen(f_data));
+
+            f_data = splice_string(f_data, 0, (int) data_left);
+            data_left = 0;
+        }
+        else
+        {
+            extra_data = " ";
+            data_left -= strlen(f_data);
+        }
+    }
+    while(data_left > 0)
+    {
+        char buffer_data[1024] = { 0 };
+        int valread = recv(sock, buffer_data, 1024, 0);
+        if(valread > 0)
+        {
+            if(data_left == inf_check)
+            {
+                char *newstring = malloc(sizeof(char) * strlen(buffer_data) + 1);
+                char *first_element = strtok(newstring, ",");
+                data_left = atof(first_element);
+                int comma_index = get_char_index(buffer_data, ',') + 1;
+                strcpy(buffer_data, (&buffer_data[comma_index]));
+            }
+            if(strlen(buffer_data) > data_left)
+            {
+                extra_data = realloc(extra_data, sizeof(char) * strlen(extra_data) + 1);
+                extra_data = splice_string(buffer_data, data_left, strlen(extra_data));
+
+                char* buff_spliced = splice_string(buffer_data, 0, strlen(buffer_data));
+                strcpy(buffer_data, buff_spliced);
+                data_left = 0;
+            }
+            else
+            {
+                data_left -= strlen(buffer_data);
+            }
+            strcat(f_data, buffer_data);
+        }
+    }
+    if(!is_File)
+    {
+        return extra_data;
+    }
+    else
+    {
+        char *filename = malloc(sizeof(char) * strlen(f_data) + 1);
+        strcpy(filename, f_data);
+        filename = strtok(filename, ",");
+
+        int first_comma = 0;
+        while(f_data[first_comma] != ',')
+        {
+            first_comma++;
+        }
+        FILE *fptr = fopen(filename, "w");
+        for(int i = first_comma+1; i < strlen(f_data); i++)
+        {
+            fprintf(fptr, "%c", f_data[i]);
+        }
+        fclose(fptr);
+        return extra_data;
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
 
 int main(int argc, char* argv[]) {
+    extract_line_data(argv[1]);
     read_rakefile(argv[1]);
+    //process_actions();
+    struct sockinfo info2 = quote_servers(0);
 
-    //for(int i = 0; i < 10; i++)
-    //{
-        // for(int j = 0; j < 10; j++)
-        // {
-             //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
-          //   if (actionsets[i][j].requirementnum > 0) {
-               //  for (int z = 0; z < actionsets[i][j].requirementnum; z++) {
-
-                     //printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
-             //        printf("actionsets[%d][%d]: %s \n", i, j, &actionsets[i][j].actionCommand);
-           //      }
-         //    }
-       //  }
-     //}
-     for(int i = 0; i < 10; i++)
-     {
-         for(int j = 0; j < actioncounts[i]; j++)
-         {
-             if(strlen(actionsets[i][j].actionCommand) > 0)
-             {
-                 printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
-             }
-         }
-     }
-    quote_servers();
-    while (true) {
-        int sock = 0, valread;
-        struct sockaddr_in serv_addr;
-        char *message = "Hello from C Client";
-        char buffer[BUFFSIZE] = {0};
-
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-            printf("\n Socket creation error \n");
-            return -1;
-        }
-
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_port = htons(portnumber);
-
-        if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-            printf("\nInvalid address/ Address not supported \n");
-            return -1;
-        }
-
-        if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            printf("\nConnection Failed \n");
-            return -1;
-        }
-
-        send_message(sock, valread, buffer, message);
-    }
-
-
+    bool is_File = true;
+    char *extra_data = "29, split, this, message, into, parts";
+    char *d = read_data(0, extra_data, is_File);
+    printf("-------- REQUIREMENTS --------\n");
+    // for(int i = 0; i < 10; i++)
+    // {
+    //     for(int j = 0; j < 10; j++)
+    //     {
+    //         //printf("actionsets[%d][%d]: %s\n", i, j, actionsets[i][j].actionCommand);
+    //         if (actionsets[i][j].requirementnum > 0)
+    //         {
+    //             for (int z = 0; z < actionsets[i][j].requirementnum; z++) 
+    //             {
+    //                 if(strlen (actionsets[i][j].requirements[z]) > 0)
+    //                 {   
+    //                     int len = strlen(actionsets[i][j].requirements[z]);
+                        
+    //                     printf("actionsets[%d][%d] req %d: %s \n", i, j, z, actionsets[i][j].requirements[z]);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //  }
+     printf("--------------------REAL DATA------------------------\n");
+    //  for(int i = 0; i < 10; i++)
+    //  {
+    //      for(int j = 0; j < actioncounts[i]; j++)
+    //      {
+    //          if(strlen(actionsets[i][j].actionCommand) > 0)
+    //          {
+    //              printf("actionsets[%d][%d]: %s \n", i, j, actionsets[i][j].actionCommand);
+    //          }
+    //      }
+    //  }
     return 0;
 }
