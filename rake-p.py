@@ -46,11 +46,10 @@ def quote_servers(index):
         for sock in ready:
             data = sock.recv(1024)
             if data:
-                data = data.decode().rsplit(",", 1)
+                data = data.decode().split(",")
 
-                sockinfo = data[0].split(",")
-                sockinfo = (sockinfo[0],int(sockinfo[1]))
-                cost = int(data[1])
+                sockinfo = (data[0],int(data[1]))
+                cost = int(data[2])
 
                 if (cost < min_cost):
                     min_cost = cost
