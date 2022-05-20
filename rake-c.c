@@ -112,25 +112,16 @@ void read_rakefile(char *rakefile){
 //--------------------------------------------------------------------------------------------------------------------------
 
 
-// void send_message(int sock, int valread, char buffer[], char* message)
-// {
-//     printf("Sending message from C Client...\n");
-//     send(sock , message, strlen(message) , 0 );
-//     valread = read(sock, buffer, 1024);
-//     printf("Received the message: %s\n", buffer);
-// }
-
 struct sockinfo
 {
-    char *host; //THIS HAS TO BE TURNED INTO AN ARRAY OF HOSTNAMES
-    int port; //THIS HAS TO BE TURNED INTO AN ARRAY OF PORTNUMS CORRESPONDING TO HOSTNAME
+    char *host; 
+    int port; 
     int port_array[BUFFSIZE];
     char **host_array;
 };
 
 struct sockinfo quote_servers(int index)
 {
-    printf("-------TESTING QUOTE SERVERS-----------\n");
     struct sockinfo quoteinfo;
     struct sockinfo finalinfo;
     int connections [BUFFSIZE];
@@ -181,8 +172,6 @@ struct sockinfo quote_servers(int index)
                 printf("Connection Failed\n");
                 exit(1);
             }
-            //printf("Connected to host : %s on port : %d\n", quoteinfo.host_array[i], quoteinfo.port_array[i]);
-
             
             char*quote = "quote,";
             char *comma = ",";
@@ -190,7 +179,7 @@ struct sockinfo quote_servers(int index)
             char*message = malloc(sizeof(char) * BUFFSIZE);
             char port_string[BUFFSIZE];
             int port_int = quoteinfo.port_array[i];
-            sprintf(port_string, "%d", port_int);
+            sprintf(port_string, "%d", port_int); //Cast to string
             concatenate_quote(message, quote, comma, hosts[i], port_string);
             //printf("OUTGOING--> %s\n", message);
             send(sock_socket , message, strlen(message) , 0 );
@@ -198,12 +187,11 @@ struct sockinfo quote_servers(int index)
         }
     }
     memset(quoteinfo.host_array, 0, sizeof(quoteinfo.host_array));
-    memset(quoteinfo.port_array, 0, sizeof(quoteinfo.port_array));
+    memset(quoteinfo.port_array, 0, sizeof(quoteinfo.port_array)); //idk why i empty it, could be removed
+
     int connections_index = 1;
     while(connections[connections_index] != 0)
     {
-        //empty the port_array and hosts_array
-    
         fd_set readfds;
         struct timeval tv;
         int retval;
@@ -221,15 +209,16 @@ struct sockinfo quote_servers(int index)
             valread = read(connections[connections_index], buffer, 1024);
             if(valread == 0)
             {
-                printf("Server %s is down\n", quoteinfo.host_array[connections_index]);
+                printf("Server is down\n");
                 connections[connections_index] = 0;
             }
             else
             {
-                //printf("INCOMING<-- %s\n", buffer);
                 bool second_comma = false;
                 char* comma = ",";
                 int second_comma_index;
+
+                //retrieve the index of the second comma
                 for(int i = 0; i < strlen(buffer); i++)
                 {
                     if(buffer[i] == comma[0])
@@ -252,12 +241,15 @@ struct sockinfo quote_servers(int index)
                         break;
                     }
                 }
-                
+                //message e.g. "localhost,6238,90"
+                //this will run from "localhost" --> first ","
                 for(int i = 0; i < first_comma_index; i++)
                 {
                     hostname[i] = buffer[i];
                 }
                 
+                //message e.g. "localhost,6238,90"
+                //this will run from "6238" --> second ","
                 for(int i = first_comma_index + 1; i < second_comma_index; i++)
                 {
                     port[i - first_comma_index - 1] = buffer[i];
@@ -266,6 +258,8 @@ struct sockinfo quote_servers(int index)
                 quoteinfo.host = hostname;
                 quoteinfo.port = atoi(port);
 
+                //message e.g. "localhost,6238,90"
+                //this will run from "90" --> end of string
                 char* cost_string = malloc(sizeof(char) * BUFFSIZE);
                 for(int i = second_comma_index; i < strlen(buffer); i++)
                 {
@@ -278,9 +272,7 @@ struct sockinfo quote_servers(int index)
                     min_cost = cost;
                     finalinfo.host = quoteinfo.host;
                     finalinfo.port = quoteinfo.port;
-
                 }
-                
             }
         }
 
@@ -294,8 +286,7 @@ struct sockinfo quote_servers(int index)
 
     printf("finalinfo.host = %s\n", finalinfo.host);
     printf("finalinfo.port = %d\n", finalinfo.port);
-    return finalinfo;               //THEY'RE JUST HARDCODED FOR NOW FOR TESTING 
-    
+    return finalinfo;            
 }
 
 //printf("%s\n", actionsets[s_index][a_index].actionCommand);
@@ -503,7 +494,7 @@ int main(int argc, char* argv[]) {
     extract_line_data(argv[1]);
     read_rakefile(argv[1]);
     //process_actions();
-    struct sockinfo info2 = quote_servers(0);
+    struct sockinfo info2 = quote_servers(0); //this was just used for testing  the function
 
     bool is_File = true;
     char *extra_data = "29, split, this, message, into, parts";
@@ -528,7 +519,7 @@ int main(int argc, char* argv[]) {
     //         }
     //     }
     //  }
-     printf("--------------------REAL DATA------------------------\n");
+     printf("--------------------ACTION COMMANDS------------------------\n");
     //  for(int i = 0; i < 10; i++)
     //  {
     //      for(int j = 0; j < actioncounts[i]; j++)
