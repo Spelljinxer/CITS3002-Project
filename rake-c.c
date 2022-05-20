@@ -217,63 +217,6 @@ void process_actions()
     for (int s_index = 0; s_index < setcount; s_index++)
     {
         bool shit = false;
-        char connections[BUFFSIZE][BUFFSIZE];
-        for (int a_index = 0; a_index < actioncounts[s_index]; a_index++)
-        {
-            char* curraction = actionsets[s_index][a_index].actionCommand;
-            char*remote = get_first_seven_chars(curraction);
-            if(strlen(curraction) > 0)
-            {
-                if (strcmp(remote, "remote-") == 0)
-                { 
-                    printf("R-OUTGOING--> %s\n", curraction);
-                    int sock = socket(AF_INET, SOCK_STREAM, 0);
-                    test_socket_create(sock);
-                    struct sockaddr_in server;
-                    struct sockaddr_in serv_addr;
-                    server.sin_family = AF_INET;
-                    server.sin_port = htons(portnumber);
-
-                    //test_socket_address("localhost", serv_addr);
-                    //test_socket_connecton(sock, server);
-
-                    // sock = socket.socket()
-                    // sock.connect(('localhost', int(port)))
-                }
-                else
-                {
-                    printf("OUTGOING--> %s\n", curraction);
-                    float sockinfo = quote_servers(a_index);
-                    int sock = socket(AF_INET, SOCK_STREAM, 0);
-                    test_socket_create(sock);
-                    // sock = socket.socket()
-                    // sock.connect(sockinfo)
-                }
-
-                char* act = "action,";
-                char* message = concatenate_strings(act, curraction);
-                //printf("message is %s\n", message);
-                //sock shit send sock.sendall(message.encode())
-                //strcpy(connections[s_index],sock);
-            }
-
-        }
-        printf("\n"); //next actionset
-
-        while(connections)
-        {
-            break;
-        }
-    }
-}
-
-//printf("%s\n", actionsets[s_index][a_index].actionCommand);
-void process_actions()
-{
-    printf("\n-------TESTING PROCESS ACTIONS-----\n");
-    for (int s_index = 0; s_index < setcount; s_index++)
-    {
-        bool shit = false;
         int connections[BUFFSIZE];
         for (int a_index = 0; a_index < actioncounts[s_index]; a_index++)
         {
@@ -368,6 +311,95 @@ void process_actions()
             }
             break;
         }
+    }
+}
+
+//WELL THE FIRST IF(EXTRA_DATA) PASSES CORRECTLY
+//IDK HOW TF TO TEST THE WHILE LOOP THAT READS GG TO THAT
+//ALSO KIANA HOV KILLS HIMEKO BUT SHE LATERS BECOMES FLAMESCION POG
+char* read_data(int sock, char *extra_data, bool is_File)
+{
+    float data_left = INFINITY;
+    float inf_check = INFINITY;
+    char *f_data = malloc(sizeof(char) * strlen(extra_data) + 1);
+    if(extra_data)
+    {
+        char *newstring = malloc(sizeof(char) * strlen(extra_data) + 1);
+        strcpy(newstring, extra_data);
+        
+        char* first_element = strtok(newstring, ",");
+        data_left = atof(first_element);
+        
+        int comma_index = get_char_index(extra_data, ',') + 1;
+        f_data = strdup(&extra_data[comma_index]);
+        
+        
+        if(strlen(f_data) > data_left)
+        {
+            extra_data = realloc(f_data, sizeof(char) * strlen(f_data) + 1);
+            extra_data = splice_string(f_data, data_left, strlen(f_data));
+
+            f_data = splice_string(f_data, 0, (int) data_left);
+            data_left = 0;
+        }
+        else
+        {
+            extra_data = " ";
+            data_left -= strlen(f_data);
+        }
+    }
+    while(data_left > 0)
+    {
+        char buffer_data[1024] = { 0 };
+        int valread = recv(sock, buffer_data, 1024, 0);
+        if(valread > 0)
+        {
+            if(data_left == inf_check)
+            {
+                char *newstring = malloc(sizeof(char) * strlen(buffer_data) + 1);
+                char *first_element = strtok(newstring, ",");
+                data_left = atof(first_element);
+                int comma_index = get_char_index(buffer_data, ',') + 1;
+                strcpy(buffer_data, (&buffer_data[comma_index]));
+            }
+            if(strlen(buffer_data) > data_left)
+            {
+                extra_data = realloc(extra_data, sizeof(char) * strlen(extra_data) + 1);
+                extra_data = splice_string(buffer_data, data_left, strlen(extra_data));
+
+                char* buff_spliced = splice_string(buffer_data, 0, strlen(buffer_data));
+                strcpy(buffer_data, buff_spliced);
+                data_left = 0;
+            }
+            else
+            {
+                data_left -= strlen(buffer_data);
+            }
+            strcat(f_data, buffer_data);
+        }
+    }
+    if(!is_File)
+    {
+        return extra_data;
+    }
+    else
+    {
+        char *filename = malloc(sizeof(char) * strlen(f_data) + 1);
+        strcpy(filename, f_data);
+        filename = strtok(filename, ",");
+
+        int first_comma = 0;
+        while(f_data[first_comma] != ',')
+        {
+            first_comma++;
+        }
+        FILE *fptr = fopen(filename, "w");
+        for(int i = first_comma+1; i < strlen(f_data); i++)
+        {
+            fprintf(fptr, "%c", f_data[i]);
+        }
+        fclose(fptr);
+        return extra_data;
     }
 }
 
