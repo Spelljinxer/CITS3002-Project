@@ -131,18 +131,16 @@ struct sockinfo
 struct sockinfo quote_servers(int index)
 {
     printf("-------TESTING QUOTE SERVERS-----------\n");
-
     struct sockinfo quoteinfo;
+    struct sockinfo finalinfo;
     int connections [BUFFSIZE];
     float min_cost = INFINITY;
-    
-    
-
+    int valread;
     for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
     {
         int portnum = portnumber;
         
-        int sock_socket = 0, valueread, client_socket;
+        int sock_socket = 0,  client_socket;
         struct sockaddr_in serv_addr;
         sock_socket = socket(AF_INET, SOCK_STREAM, 0);
         if(strlen(hosts[i]) > 0 )
@@ -183,7 +181,7 @@ struct sockinfo quote_servers(int index)
                 printf("Connection Failed\n");
                 exit(1);
             }
-            printf("Connected to host : %s on port : %d\n", quoteinfo.host_array[i], quoteinfo.port_array[i]);
+            //printf("Connected to host : %s on port : %d\n", quoteinfo.host_array[i], quoteinfo.port_array[i]);
 
             
             char*quote = "quote,";
@@ -194,15 +192,109 @@ struct sockinfo quote_servers(int index)
             int port_int = quoteinfo.port_array[i];
             sprintf(port_string, "%d", port_int);
             concatenate_quote(message, quote, comma, hosts[i], port_string);
-            printf("OUTGOING--> %s\n", message);
+            //printf("OUTGOING--> %s\n", message);
             send(sock_socket , message, strlen(message) , 0 );
+            connections[i] = sock_socket;
         }
     }
+    memset(quoteinfo.host_array, 0, sizeof(quoteinfo.host_array));
+    memset(quoteinfo.port_array, 0, sizeof(quoteinfo.port_array));
+    int connections_index = 1;
+    while(connections[connections_index] != 0)
+    {
+        //empty the port_array and hosts_array
     
-    struct sockinfo info;
-    info.host = "127.0.0.1";
-    info.port = portnumber;
-    return info;                //THEY'RE JUST HARDCODED FOR NOW FOR TESTING 
+        fd_set readfds;
+        struct timeval tv;
+        int retval;
+        FD_ZERO(&readfds);
+        FD_SET(connections[connections_index], &readfds);
+        retval = select(connections[connections_index]+1, &readfds, NULL, NULL, &tv);
+        if(retval == -1)
+        {
+            printf("Select error\n");
+            exit(1);
+        }
+        else if(retval)
+        {
+            char buffer[1024] = {0};
+            valread = read(connections[connections_index], buffer, 1024);
+            if(valread == 0)
+            {
+                printf("Server %s is down\n", quoteinfo.host_array[connections_index]);
+                connections[connections_index] = 0;
+            }
+            else
+            {
+                //printf("INCOMING<-- %s\n", buffer);
+                bool second_comma = false;
+                char* comma = ",";
+                int second_comma_index;
+                for(int i = 0; i < strlen(buffer); i++)
+                {
+                    if(buffer[i] == comma[0])
+                    {
+                        if(second_comma)
+                        {
+                            second_comma_index = i;
+                        }
+                        second_comma = true;
+                    }
+                }
+                char*hostname = malloc(sizeof(char) * BUFFSIZE);
+                char*port = malloc(sizeof(char) * 512);
+                int first_comma_index = 0;
+                for(int i = 0; i < strlen(buffer); i++)
+                {
+                    if(buffer[i] == comma[0])
+                    {
+                        first_comma_index = i;
+                        break;
+                    }
+                }
+                
+                for(int i = 0; i < first_comma_index; i++)
+                {
+                    hostname[i] = buffer[i];
+                }
+                
+                for(int i = first_comma_index + 1; i < second_comma_index; i++)
+                {
+                    port[i - first_comma_index - 1] = buffer[i];
+                }
+
+                quoteinfo.host = hostname;
+                quoteinfo.port = atoi(port);
+
+                char* cost_string = malloc(sizeof(char) * BUFFSIZE);
+                for(int i = second_comma_index; i < strlen(buffer); i++)
+                {
+                    cost_string[i-second_comma_index] = buffer[i+1];
+                }
+                int cost = atoi(cost_string);
+
+                if(cost < min_cost)
+                {
+                    min_cost = cost;
+                    finalinfo.host = quoteinfo.host;
+                    finalinfo.port = quoteinfo.port;
+
+                }
+                
+            }
+        }
+
+        connections_index++;
+        if(connections[connections_index] == 0)
+        {
+            break;
+        }
+    }
+
+
+    printf("finalinfo.host = %s\n", finalinfo.host);
+    printf("finalinfo.port = %d\n", finalinfo.port);
+    return finalinfo;               //THEY'RE JUST HARDCODED FOR NOW FOR TESTING 
     
 }
 
@@ -266,12 +358,14 @@ void process_actions()
                 char *msg = malloc(strlen(action) + strlen(curraction) + 1);
                 strcpy(msg, action);
                 strcat(msg, curraction);
+                printf("OUTGOING--> %s\n", msg);
                 send(sock, msg, strlen(msg), 0);
                 connections[s_index] = sock;
             }
 
         }
         printf("\n"); //next actionset
+
         //TBH IDK WTF I DID OR WTF ITS EVEN DOING BUT IT WORKS FOR NOW
         while(connections)
         {
