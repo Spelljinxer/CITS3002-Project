@@ -194,7 +194,6 @@ struct sockinfo quote_servers(int index)
             int port_int = quoteinfo.port_array[i];
             sprintf(port_string, "%d", port_int);
             concatenate_quote(message, quote, comma, hosts[i], port_string);
-            strcat(message, "None");
             printf("OUTGOING--> %s\n", message);
             send(sock_socket , message, strlen(message) , 0 );
         }
