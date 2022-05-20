@@ -128,7 +128,6 @@ void concatenate_quote(char* message, char* quote, char*comma, char*hostname, ch
     strcat(message, hostname);
     strcat(message, comma);
     strcat(message, port);
-    strcat(message, comma);
 }
 
 char *splice_string(char* string, int start, int end)
