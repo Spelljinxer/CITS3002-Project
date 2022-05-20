@@ -31,6 +31,19 @@ int host_length = 0;
 
 //-----------------------------------------------------------------------------------------------------
 
+int count_char(char *str, char c) //string, delimiter 
+{
+    int count = 0;
+    for(int i = 0; i<=strlen(str); i++)
+    {
+        if(str[i] == c)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
 bool StartsWith(const char *a, const char *b)
 {
     if(strncmp(a, b, strlen(b)) == 0) return 1;
