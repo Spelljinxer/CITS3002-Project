@@ -31,8 +31,6 @@ def send_data_with_size(sock, data):
     sock.sendall(data.encode())
 
 def send_and_receive(sock):
-    global servercost
-
     data = sock.recv(1024).decode()
     print("INCOMING<--", data)
     datatype = data.split(",")[0]
@@ -42,18 +40,21 @@ def send_and_receive(sock):
     # quote -> quotes the server for a cost value.
     # action -> executes an action on the server.
     if (datatype == "quote"):
-        servercost -= 1
-
-        data = data.split(",",2)
-        host = ",".join(data[0:2])
+        # RECEIVES: "quote,hostname,portnum"
+        # SENDS: "hostname,portnum,cost"
 
         # Generates a cost with a random value and appends it onto the host information.
-        data = host + "," + str(random.randint(0,100))
+        data = data + "," + str(random.randint(0,100))
         send_data(sock, data)
     if (datatype == "action"):
-        #TODO: receive files, etc
+        # RECEIVES: "action,actioncommand"
+        # SENDS: "message size,exit-code,out,err,file-output count"
+        # out -> 1 if an output exists, err -> 1 if an error exists
+        # SENDS: "message size,output" (if out = 1)
+        # SENDS: "message size,error" (if err = 1)
+        # SENDS: "message size,filepath+name,filecontent" (for every file found, so far we just send 3 dummy files)
 
-        servercost -= 1
+        #TODO: receive files, etc
         pid = os.fork()
         if (pid == 0):
             #time.sleep(os.getpid() % 5 + 2)

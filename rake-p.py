@@ -30,13 +30,13 @@ def quote_servers(index):
         sock = socket.socket()
         sock.connect((host, portnum))
 
-        if len(actionsets[0][index]) > 1:
-                requirements = " ".join(actionsets[0][index][1:])
-        else:
-            requirements = "None"
+        #if len(actionsets[0][index]) > 1:
+                #requirements = " ".join(actionsets[0][index][1:])
+        #else:
+            #requirements = "None"
 
-        print("\tRequirements:", requirements)
-        message = "quote," + host + "," + str(portnum) + "," + requirements
+        #print("\tRequirements:", requirements)
+        message = "quote," + host + "," + str(portnum)
         sock.sendall(message.encode())
         connections.append(sock)
 
@@ -150,9 +150,13 @@ def process_actions():
                 data_left = float('inf')
                 f_data = ""
                 extra_data = ""
+                recv_size = 1024
 
                 while data_left > 0:
-                    data = sock.recv(1024)
+                    if (data_left < 1024):
+                        recv_size = data_left
+
+                    data = sock.recv(recv_size)
                     if data:
                         data = data.decode()
                         if data_left == float('inf'):
@@ -160,14 +164,8 @@ def process_actions():
                             data_left = int(data[0])
                             data = ",".join(data[1:])
 
-                        # If this is true, some additional data was sent through.
-                        if len(data) > data_left:
-                            extra_data = data[data_left:]
-                            data = data[:data_left]
-                            data_left = 0
-                        else:
-                            data_left -= len(data)
 
+                        data_left -= len(data)
                         f_data += data
 
                 f_data = f_data.split(",")
