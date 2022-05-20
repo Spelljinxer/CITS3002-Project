@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
+#include <errno.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -71,14 +72,6 @@ char *concatenate_strings(char *s1, char *s2)
     return result;
 }
 
-void test_socket_create(int socket)
-{
-    if (socket == -1)
-    {
-        printf("Could not create socket\n");
-        exit(1);
-    }
-}
 
 void test_socket_address(char* hostname, struct sockaddr_in serv_ddr)
 {
@@ -100,6 +93,21 @@ void test_socket_connecton(int socket, struct sockaddr_in server)
     {
         printf("Connected to server\n");
     }
+}
+
+int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t serv_size)
+{
+    client_fd = connect(sock, (struct sockaddr*)&serv_addr, serv_size);
+    if(client_fd < 0)
+    {
+        printf("Connection Failed\n");
+        return -1;
+    }
+    else
+    {
+        printf("Connected to server\n");
+    }
+    return client_fd;
 }
 
 char** split_string_to_array(char *string_to_split, const char* delim)
