@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <math.h>
 
+
 //-----------------------------------------------------------------------------------------------------
 #define BUFFSIZE 1024
 
@@ -30,19 +31,6 @@ int longest_requirements_line = 0;
 int host_length = 0;
 
 //-----------------------------------------------------------------------------------------------------
-
-int count_char(char *str, char c) //string, delimiter 
-{
-    int count = 0;
-    for(int i = 0; i<=strlen(str); i++)
-    {
-        if(str[i] == c)
-        {
-            count++;
-        }
-    }
-    return count;
-}
 
 bool StartsWith(const char *a, const char *b)
 {
@@ -68,6 +56,17 @@ char *trimwhitespace(char *str)
     end[1] = '\0';
 
     return str;
+}
+
+int char_counter(char *str, char* delim)
+{
+    int count = 0;
+    for (int i = 0; i < strlen(str); i++)
+    {
+        if (str[i] == delim[0])
+            count++;
+    }
+    return count;
 }
 
 char* get_first_seven_chars(char *s)
@@ -123,21 +122,13 @@ int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t
     return client_fd;
 }
 
-char** split_string_to_array(char *string_to_split, const char* delim)
+void concatenate_quote(char* message, char* quote, char*comma, char*hostname, char*port)
 {
-    char *newstring;
-    strcpy(newstring, string_to_split);
-    char **result = malloc(sizeof(char*) * strlen(string_to_split) + 1);
-    int index = 0;
-    char*split_char = strtok(newstring, delim);
-    while(split_char != NULL)
-    {
-        result[index] = malloc(sizeof(char) * strlen(split_char) + 1);
-        strcpy(result[index], split_char);
-        split_char = strtok(NULL, delim);
-        index++;
-    }
-    return result;
+    strcpy(message, quote);
+    strcat(message, hostname);
+    strcat(message, comma);
+    strcat(message, port);
+    strcat(message, comma);
 }
 
 char *splice_string(char* string, int start, int end)
@@ -168,6 +159,8 @@ int get_char_index(char *str, int delim)
     return first_occurence;
 }
 
+
+//---------------------------------------------------
 
 void extract_line_data(char *rakefile)
 {
