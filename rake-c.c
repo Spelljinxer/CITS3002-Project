@@ -464,37 +464,37 @@ void process_actions()
     for (int s_index = 0; s_index < setcount; s_index++)
     {
         bool shit = false;
-        int sock = 0,  client_fd;
-        for (int a_index = 0; a_index < actioncounts[s_index]; a_index++)
+        int sock = 0, client_fd;
+        for(int a_index = 0; a_index < actioncounts[s_index]; a_index++)
         {
-            char* curraction = actionsets[s_index][a_index].actionCommand;
+            char*curraction = actionsets[s_index][a_index].actionCommand;
             char*remote = get_first_seven_chars(curraction);
-            if(strlen(curraction) > 0)
+            if(strlen(curraction) > 1)
             {
+
                 struct sockaddr_in serv_addr;
                 serv_addr.sin_family = AF_INET;
 
-                if (strcmp(remote, "remote-") == 0)
-                { 
-                    char* remote_action = malloc(sizeof(char) * BUFFSIZE);
+
+                if(strcmp(remote, "remote-") == 0)
+                {
+                    char* remote_action = malloc(sizeof(char) * strlen(curraction));
                     for(int i = 7; i < strlen(curraction); i++)
                     {
                         remote_action[i-7] = curraction[i];
                     }
+                    remote_action[strlen(curraction)-7] = '\0';
                     strcpy(curraction, remote_action);
                     printf("R-OUTGOING--> %s\n", curraction);
                     serv_addr.sin_port = htons(portnumber);
+
                     sock = socket(AF_INET, SOCK_STREAM, 0);
-                    if(sock < 0)
-                    {
-                        printf("\n Error : Could not create socket \n");
-                    }
-                    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) 
+                    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
                     {
                         printf("\nInvalid address/ Address not supported \n");
                         exit(1);
                     }
-                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr));
+                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr), portnumber);
                 }
                 else
                 {
@@ -506,110 +506,92 @@ void process_actions()
                         hostname_exec = "127.0.0.1";
                     }
                     int port_exec = info.port;
-                    // printf("hostname_exec = %s\n", hostname_exec);
-                    // printf("port_exec = %d\n", port_exec);
                     serv_addr.sin_port = htons(info.port);
                     sock = socket(AF_INET, SOCK_STREAM, 0);
-
-                    if(sock < 0)
-                    {
-                        printf("\n Error : Could not create socket \n");
-                    }
-                    if (inet_pton(AF_INET, hostname_exec, &serv_addr.sin_addr) <= 0) 
+                    if(inet_pton(AF_INET, hostname_exec, &serv_addr.sin_addr) <= 0)
                     {
                         printf("\nInvalid address/ Address not supported \n");
                         exit(1);
                     }
-                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr));         
+                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr), port_exec);
                 }
 
-                char *action = "action,";
-                char *msg = malloc(strlen(action) + strlen(curraction) + 1);
+                char*action = "action,";
+                char*msg = malloc(sizeof(action) * strlen(curraction) + 1);
                 strcpy(msg, action);
                 strcat(msg, curraction);
                 send(sock, msg, strlen(msg), 0);
                 connections[s_index] = sock;
             }
-        }
-        printf("\n"); //next actionset
-        
-        
-        for(int i = 0; i < setcount; i++)
-        {
-            if(connections[i] != 0)
+            printf("\n"); //next actionset
+            
+            for(int i = 0; i < setcount; i++)
             {
-                fd_set readfds;
-                struct timeval tv;
-                int retval;
-                char buffer[BUFFSIZE] = {0};
-                int max_fd = connections[i];
-                FD_ZERO(&readfds);
-                FD_SET(connections[i], &readfds);
-                tv.tv_sec = 5;
-                tv.tv_usec = 0;
-                retval = select(max_fd + 1, &readfds, NULL, NULL, &tv);
-                if(retval == -1)
+                if(connections[i] != 0)
                 {
-                    printf("select error\n");
-                }
-                else if(retval == 0)
-                {
-                    printf("timeout\n");
-                }
-                else
-                {
-                    if(FD_ISSET(connections[i], &readfds))
+                    char buffer[1024] = {0};
+                    fd_set readfds;
+                    FD_ZERO(&readfds);
+                    FD_SET(connections[i], &readfds);
+                    struct timeval tv;
+                    tv.tv_sec = 0;
+                    tv.tv_usec = 100000;
+                    int retval = select(connections[i] + 1, &readfds, NULL, NULL, &tv);
+                    if(retval > 0)
                     {
-                        valread = read(connections[i], buffer, BUFFSIZE);
-                        if(valread == 0)
+                        if(FD_ISSET(connections[i], &readfds))
                         {
-                            printf("connection closed\n");
-                            connections[i] = 0;
-                        }
-                        else
-                        {
-                            float data_left = INFINITY;
-                            char *data_left_placeholder = malloc(sizeof(char) * BUFFSIZE);
-                            char*data = malloc(sizeof(char) * strlen(buffer));
-                            char*f_data = malloc(sizeof(char) * strlen(buffer));
-                            char*extra_data = malloc(sizeof(char) * strlen(buffer));
-                            strcpy(data, buffer);
-                            if(strlen(data) > 0)
+                            valread = read(connections[i], buffer, 1024);
+                            if(valread == 0)
                             {
-                                printf("INCOMING<-- %s\n", data);
+                                printf("Connection closed\n");
+                                connections[i] = 0;
+                            }
+                            else
+                            {
+                                //printf("INCOMING<---%s\n", buffer);
+                                float data_left = INFINITY;
+                                char *data_left_placeholder = malloc(sizeof(char) * strlen(buffer));
+                                char*data = malloc(sizeof(char) * strlen(buffer));
+                                char*extra_data = malloc(sizeof(char) * strlen(buffer));
+                                char*f_data = malloc(sizeof(char) * strlen(buffer));
+                                strcpy(data, buffer);
+
                                 int first_comma_index = 0;
-                                for(int i = 0; i < strlen(data); i++)
+                                for(int i = 0; i < strlen(buffer); i++)
                                 {
-                                    if(data[i] == ',')
+                                    if(buffer[i] == ',')
                                     {
                                         first_comma_index = i;
                                         break;
                                     }
                                 }
+
                                 if(data_left == INFINITY)
                                 {
-                                    char *dl_placeholder = malloc(sizeof(char) * strlen(data));
+                                    char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
                                     for(int i = 0; i < first_comma_index; i++)
                                     {
-                                        dl_placeholder[i] = data[i];
+                                        data_left_placeholder[i] = data[i];
                                     }
-                                    data_left = atof(dl_placeholder);
-                                    char *da_placeholder = malloc(sizeof(char) * strlen(data));
+                                    data_left = atof(data_left_placeholder);
+
+                                    char*data_placeholder = malloc(sizeof(char) * strlen(data));
                                     for(int i = first_comma_index + 1; i < strlen(data); i++)
                                     {
-                                        da_placeholder[i-first_comma_index-1] = data[i];
+                                        data_placeholder[i-first_comma_index-1] = data[i];
                                     }
-                                    strcpy(data, da_placeholder);
+                                    strcpy(data, data_placeholder);
                                 }
 
-                                if(strlen(data) > data_left)
+                                if(strlen(data) <= data_left)
                                 {
                                     for(int i = data_left; i < strlen(data); i++)
                                     {
                                         extra_data[i] = data[i];
                                     }
                                     char *ds_save = malloc(sizeof(char) * strlen(data));
-                                    for(int i = 0 ; i < data_left; i++)
+                                    for(int i = 0 ; i < data_left; i ++)
                                     {
                                         ds_save[i] = data[i];
                                     }
@@ -620,71 +602,74 @@ void process_actions()
                                 {
                                     data_left -= strlen(data);
                                 }
-                                
                                 strcat(f_data, data);
-                            }
-
-
-                            char *data_exitcode_hold = malloc(strlen(f_data) + 1);
-                            char *data_stdout_hold = malloc(strlen(f_data) + 1);
-                            char *data_stderr_hold = malloc(strlen(f_data) + 1);
-                            char *data_fcount_hold = malloc(strlen(f_data) + 1);
-
-
-                            struct comma_indices ci;
-                            
-                            int comma_index_one = init_comma_indices(f_data).comma_index_one;
-                            int comma_index_two = init_comma_indices(f_data).comma_index_two;
-                            int comma_index_three = init_comma_indices(f_data).comma_index_three;
-
-                            int data_exitcode = get_exit_code(f_data, comma_index_one);
-                            int data_stdout = get_stdout(f_data, comma_index_one, comma_index_two);
-                            int data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
-                            int data_fcount = get_fcount(f_data, comma_index_three);
-
-                            
-
-                            if(data_exitcode != 0)
-                            {
-                                shit = true;
-                            }
-
-                            if(data_stdout == 1)
-                            {
-                                char*output = malloc(sizeof(char) * BUFFSIZE);
-                                output, extra_data = read_data(sock, extra_data, false);
                                 
-                                printf("OUTPUT--> %s\n", output);
-                            }
-                            if(data_stderr == 1)
-                            {
-                                char*output = malloc(sizeof(char) * BUFFSIZE);
-                                output , extra_data = read_data(sock, extra_data, false);
+                                
 
-                                printf("ERROR--> %s\n", output);
-                            }
-                            for(int i = 0; i < data_fcount; i++) //RUNS IN TESTING
-                            {
-                                extra_data = read_data(sock, extra_data, true);
-                            }
+                                char *data_exitcode_hold = malloc(strlen(f_data) + 1);
+                                char *data_stdout_hold = malloc(strlen(f_data) + 1);
+                                char *data_stderr_hold = malloc(strlen(f_data) + 1);
+                                char *data_fcount_hold = malloc(strlen(f_data) + 1);
+
+
+                                struct comma_indices ci;
+                                
+                                int comma_index_one = init_comma_indices(f_data).comma_index_one;
+                                int comma_index_two = init_comma_indices(f_data).comma_index_two;
+                                int comma_index_three = init_comma_indices(f_data).comma_index_three;
+
+                                int data_exitcode = get_exit_code(f_data, comma_index_one);
+                                int data_stdout = get_stdout(f_data, comma_index_one, comma_index_two);
+                                int data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
+                                int data_fcount = get_fcount(f_data, comma_index_three);
+                                
+                            
+                                if(data_exitcode != 0)
+                                {
+                                    shit = true;
+                                }
+                                printf("data_stdout : %d\n", data_stdout);
+                                if(data_stdout == 1)
+                                {
+
+                    
+                                    char*output = malloc(sizeof(char) * BUFFSIZE);
+                                    output, extra_data = read_data(sock, extra_data, false);
+
+                                    printf("OUTPUT-->%s\n", extra_data);
+                                }
+                                
+                                if(data_stderr == 1)
+                                {
+                                    char*output = malloc(sizeof(char) * BUFFSIZE);
+                                    output, extra_data = read_data(sock, extra_data, false);
+
+                                    printf("ERROR-->%s\n", extra_data);
+                                }
+
+                                for(int i = 0; i < data_fcount; i++)
+                                {
+                                    extra_data = read_data(sock, " ", true);
+                                }
+                            } 
                         }
                     }
                 }
-                close(connections[i]);
-                connections[i] = 0;
+                if(shit)
+                {
+                    printf("TERMINATED--> actionset %d\n", s_index+1);
+                    break;
+                }
             }
-        }
-        if(shit)
-        {
-            printf("TERMINATED--> actionset %d\n", s_index+1);
-            break;
+
         }
     }
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) 
+{
     //extract_line_data(argv[1]);
     read_rakefile(argv[1]);
     process_actions();
