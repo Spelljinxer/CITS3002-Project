@@ -32,6 +32,92 @@ int host_length = 0;
 
 //-----------------------------------------------------------------------------------------------------
 
+struct comma_indices{
+    int comma_index_one;
+    int comma_index_two;
+    int comma_index_three;
+};
+
+struct comma_indices init_comma_indices(char *fdata)
+{
+    struct comma_indices ci;
+    ci.comma_index_one = 0;
+    ci.comma_index_two = 0;
+    ci.comma_index_three = 0;
+    for (int i = 0; i < strlen(fdata); i++)
+    {
+        if (fdata[i] == ',')
+        {
+            if (ci.comma_index_one == 0)
+            {
+                ci.comma_index_one = i;
+            }
+            else if (ci.comma_index_two == 0)
+            {
+                ci.comma_index_two = i;
+            }
+            else if (ci.comma_index_three == 0)
+            {
+                ci.comma_index_three = i;
+            }
+        }
+    }
+    return ci;
+}
+
+int get_exit_code(char *f_data, int comma_index_one)
+{
+    char *data_exitcode_hold = malloc(strlen(f_data) + 1);
+    for(int i = 0; i < comma_index_one; i++)
+    {
+        data_exitcode_hold[i] = f_data[i];
+    }
+    data_exitcode_hold[comma_index_one] = '\0';
+    int exit_code = atoi(data_exitcode_hold);
+    free(data_exitcode_hold);
+    return exit_code;
+}
+
+int get_stdout(char *f_data, int comma_index_one, int comma_index_two)
+{
+    char *data_stdout_hold = malloc(strlen(f_data) + 1);
+    for(int i = comma_index_one + 1; i < comma_index_two; i++)
+    {
+        data_stdout_hold[i - comma_index_one - 1] = f_data[i];
+    }
+    data_stdout_hold[comma_index_two] = '\0';
+    int stdout_code = atoi(data_stdout_hold);
+    free(data_stdout_hold);
+    return stdout_code;
+}
+
+int get_stderr(char *f_data, int comma_index_two, int comma_index_three)
+{
+    char *data_stderr_hold = malloc(strlen(f_data) + 1);
+    for(int i = comma_index_two + 1; i < comma_index_three; i++)
+    {
+        data_stderr_hold[i - comma_index_two - 1] = f_data[i];
+    }
+    data_stderr_hold[comma_index_three] = '\0';
+    int stderr_code = atoi(data_stderr_hold);
+    free(data_stderr_hold);
+    return stderr_code;
+}
+
+int get_fcount(char *f_data, int comma_index_three)
+{
+    char *data_fcount_hold = malloc(strlen(f_data) + 1);
+    for(int i = comma_index_three + 1; i < strlen(f_data); i++)
+    {
+        data_fcount_hold[i - comma_index_three - 1] = f_data[i];
+    }
+    data_fcount_hold[strlen(f_data) - comma_index_three - 1] = '\0';
+    int fcount_code = atoi(data_fcount_hold);
+    free(data_fcount_hold);
+    return fcount_code;
+}
+
+//-------------------------------------------------------------------------------------------------------------
 bool StartsWith(const char *a, const char *b)
 {
     if(strncmp(a, b, strlen(b)) == 0) return 1;
@@ -101,10 +187,10 @@ void test_socket_connecton(int socket, struct sockaddr_in server)
         printf("Could not connect to server\n");
         exit(1);
     }
-    else
-    {
-        printf("Connected to server\n");
-    }
+    // else
+    // {
+    //     printf("Connected to server\n");
+    // }
 }
 
 int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t serv_size)
@@ -115,10 +201,10 @@ int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t
         printf("Connection Failed\n");
         return -1;
     }
-    else
-    {
-        printf("Connected to server\n");
-    }
+    // else
+    // {
+    //     printf("Connected to server\n");
+    // }
     return client_fd;
 }
 
