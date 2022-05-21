@@ -151,11 +151,9 @@ def process_actions():
                 extra_data = ""
                 recv_size = 1024
 
-                while data_left > 0:
-                    if (data_left < 1024):
-                        recv_size = data_left
-
-                    data = sock.recv(recv_size)
+                
+                 while data_left > 0:
+                    data = sock.recv(1024)
                     if data:
                         data = data.decode()
                         if data_left == float('inf'):
@@ -163,8 +161,14 @@ def process_actions():
                             data_left = int(data[0])
                             data = ",".join(data[1:])
 
+                        # If this is true, some additional data was sent through.
+                        if len(data) > data_left:
+                            extra_data = data[data_left:]
+                            data = data[:data_left]
+                            data_left = 0
+                        else:
+                            data_left -= len(data)
 
-                        data_left -= len(data)
                         f_data += data
 
                 f_data = f_data.split(",")
