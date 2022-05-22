@@ -149,10 +149,8 @@ def process_actions():
                 data_left = float('inf')
                 f_data = ""
                 extra_data = ""
-                recv_size = 1024
-
                 
-                 while data_left > 0:
+                while data_left > 0:
                     data = sock.recv(1024)
                     if data:
                         data = data.decode()
