@@ -639,8 +639,8 @@ void process_actions_TWO()
                             printf("the data is fat as fuck lol\ndata left is: %f\n",data_left);
                             //char* extra_data_TWO = calloc(strlen(data),sizeof(char));
                             //printf("finished alloc for edata2");
-                            char* extra_data_two = malloc(sizeof(data));
-                            strncpy(extra_data_two, data + (int)data_left, strlen(data) - (int)data_left);
+                            char* extra_data_two = malloc(sizeof(char) * (strlen(data) - (int)data_left));
+                            strncpy(extra_data_two, data + (int)data_left, strlen(data) - (int)data_left - 2);
                             printf("reached past alloc, looking at start of: %d\n",(int)data_left);
                             //printf("data start is also: %s",data[0] + '0');
                             //for (int i = (int)data_left; i < strlen(data); i++) {
@@ -651,7 +651,8 @@ void process_actions_TWO()
                             //printf("e data TWO after execution: %s\n",extra_data_TWO);
                             //free(extra_data);
                             printf("extra data2 rn is: %s\n",extra_data_two);
-                            char* extra_data = extra_data_two;
+                            strcpy(extra_data, extra_data_two);
+                            free(extra_data_two);
                             //strcpy(extra_data,extra_data_two);
                             //free(extra_data_two);
                             printf("e data ONE after execution: %s\n",extra_data);
@@ -690,6 +691,7 @@ void process_actions_TWO()
                     {
                         shit = true;
                     }
+                    printf("is this even reached?? X3\n");
                     if(data_stdout == 1)
                     {
                         printf("extra data to stdout: %s\n",extra_data);
