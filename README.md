@@ -44,7 +44,7 @@ Project Description:
 - [x] Implement sending files back to the user (separate from sending command outputs).
 - [ ] Implement sending files to the server (server requires recv code)
 - [ ] Perform Compiliation and Linking
-- [ ] Test two-tabbed lines that are only a comment w/ C and Python.
+- [X] Test two-tabbed lines that are only a comment w/ C and Python.
 - [ ] Check if the python TODOs are fine.
 - [ ] Refactor code on Python
 - [ ] Complete C code
