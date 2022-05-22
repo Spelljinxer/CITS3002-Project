@@ -195,6 +195,7 @@ struct sockinfo quote_servers(int index)
     int connections_index = 1;
     while(connections[connections_index] != 0)
     {
+        printf("reached ig? - connec quote");
         fd_set readfds;
         struct timeval tv;
         int retval;
@@ -295,9 +296,12 @@ struct sockinfo quote_servers(int index)
 char *read_data(int sock, char*extra_data, bool is_File)
 {
     float data_left = INFINITY;
-    char *f_data = malloc(sizeof(char) * strlen(extra_data));
-    if(extra_data[0] == '\0')
+    char *f_data = calloc(strlen(extra_data),sizeof(char));
+
+    printf("extra_data pre execution: %s\n",extra_data);
+    if(extra_data[0] != '\0')
     {
+        printf("Extra data exists reached: %s\n", extra_data);
         int first_comma = 0;
         for(int i = 0; i < strlen(extra_data); i++)
         {
@@ -318,8 +322,11 @@ char *read_data(int sock, char*extra_data, bool is_File)
             f_data[i-first_comma-1] = extra_data[i];
         }
 
+        printf("f_data in the middle of extra data check: %s\n", f_data);
+
         if(strlen(f_data) > data_left)
         {
+            printf("len of fdata exceeds data left in extra data check\n");
             int max_fdata_length = 0;
             for(int i = data_left; i < strlen(f_data); i++)
             {
@@ -331,7 +338,13 @@ char *read_data(int sock, char*extra_data, bool is_File)
             }
             //set extra_data to f_data[data_left:]
             int dl_as_int = data_left;
-            extra_data = malloc(sizeof(char) *  strlen(f_data));
+
+            max_fdata_length = strlen(f_data);
+            printf("max fdata length is set to %d\n",max_fdata_length);
+            free(extra_data);
+            extra_data[strlen(f_data)];
+
+
             for(int i = dl_as_int; i < max_fdata_length; i++)
             {
                 extra_data[i-dl_as_int] = f_data[i];
@@ -349,12 +362,16 @@ char *read_data(int sock, char*extra_data, bool is_File)
             strcpy(f_data, f_data_TWO);
             free(f_data_TWO);
             data_left = 0;
+            printf("f_data extra payload even after extra_data: %s\n",f_data);
+            printf("extra_data extra payload even after extra_data: %s\n",extra_data);
         }
-        
+
         else
         {
-            memset(extra_data, 0 , sizeof(extra_data)); //CHECK IF THIS ACTUALLY WORKS
-            strcpy(extra_data, " ");
+            //memset(extra_data, 0 , sizeof(extra_data)); //CHECK IF THIS ACTUALLY WORKS
+            free(extra_data);
+            extra_data = calloc(strlen(extra_data), sizeof(char));
+            //strcpy(extra_data, " ");
             data_left -= strlen(f_data);
         }
     }
@@ -362,9 +379,11 @@ char *read_data(int sock, char*extra_data, bool is_File)
     {
         char buffer_data[BUFFSIZE] = { 0 };
         int valread;
-        valread = read(sock, buffer_data, BUFFSIZE); 
+        valread = read(sock, buffer_data, BUFFSIZE);
         if(valread)
         {
+            printf("buffer data pre INFINITY check readdata: %s\n", buffer_data);
+            printf("data left pre INFINITY check readdata: %f\n", data_left);
             if(data_left == INFINITY)
             {
                 int first_comma_index = 0;
@@ -382,17 +401,22 @@ char *read_data(int sock, char*extra_data, bool is_File)
                     data_left_placeholder[i] = buffer_data[i];
                 }
                 data_left = atof(data_left_placeholder);
+                printf("data left during INFINITY readdata: %f\n", data_left);
                 char* buffer_data_copy = malloc(sizeof(char) * strlen(buffer_data));
                 for(int i = first_comma_index + 1; i < strlen(buffer_data); i++)
                 {
                     buffer_data_copy[i-first_comma_index-1] = buffer_data[i];
                 }
+                printf("buffer data copy is now: %s\n", buffer_data_copy);
                 strcpy(buffer_data, buffer_data_copy);
 
             }
-            
+
+            printf("buffer data pre check w/ dataleft: %s\n",buffer_data);
+            printf("buffer length: %ld\n",strlen(buffer_data));
             if(strlen(buffer_data) > data_left)
             {
+                printf("buffer length has extra data reached\n");
                 int dl_as_int = data_left;
                 extra_data = malloc(sizeof(char) *  strlen(buffer_data));
                 for(int i = dl_as_int; i < strlen(buffer_data); i++)
@@ -401,6 +425,7 @@ char *read_data(int sock, char*extra_data, bool is_File)
                 }
                 extra_data[strlen(buffer_data)-dl_as_int] = '\0';
                 //printf("extra_data = %s\n", extra_data);
+                printf("extra data mid check: %s\n",extra_data);
 
                 char*buffer_data_TWO = malloc(sizeof(char) * strlen(buffer_data));
                 int buffer_data_index = 0;
@@ -413,17 +438,23 @@ char *read_data(int sock, char*extra_data, bool is_File)
                 //printf("buffer_data = %s\n", buffer_data);
                 data_left = 0;
 
+                printf("buffer_data end of extra_data check: %s\n",buffer_data);
+
             }
             else
             {
                 data_left -= strlen(buffer_data);
             }
             strcat(f_data, buffer_data);
+            printf("f_data at end of loop: %s\n",f_data);
+            printf("data_left at end of loop: %f\n",data_left);
         }
         
     }
     if(is_File == false)
     {
+        printf("OUTPUT-->%s\n", f_data);
+        printf("extra_data returned: %s\n", extra_data);
         return extra_data;
     }
     else
@@ -453,7 +484,9 @@ char *read_data(int sock, char*extra_data, bool is_File)
         fptr = fopen(filename, "w");
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
-        
+
+        printf("reached end of a file: %s\n",filename);
+        printf("extra_data returned: %s\n", extra_data);
         return extra_data;
     }
 }
@@ -462,6 +495,7 @@ char *read_data(int sock, char*extra_data, bool is_File)
 
 void process_actions_TWO()
 {
+    printf("reached ig?");
     struct sockinfo info;
     for(int s_index = 0; s_index < setcount; s_index++)
     {
@@ -538,6 +572,7 @@ void process_actions_TWO()
         }
         while(total_actions > 0)
         {
+            printf("REACHED SELECT STATEMENT!!!!\n");
             fd_set readfds;
             FD_ZERO(&readfds);
             FD_SET(sock, &readfds);
@@ -563,7 +598,9 @@ void process_actions_TWO()
                     float data_left = INFINITY;
                     char *data_left_placeholder = malloc(sizeof(char) * strlen(buffer));
                     char*data = malloc(sizeof(char) * strlen(buffer));
-                    char*extra_data = malloc(sizeof(char) * strlen(buffer));
+                    //char*extra_data = malloc(sizeof(char) * strlen(buffer));
+                    char* extra_data = calloc(strlen(buffer),sizeof(char));
+                    printf("extra data memsize is char * %ld\n", strlen(buffer));
                     char*f_data = malloc(sizeof(char) * strlen(buffer));
                     strcpy(data, buffer);
                     //printf("INCOMING<-- %s\n", buffer);
@@ -577,49 +614,77 @@ void process_actions_TWO()
                         }
                     }
 
-                    if(data_left == INFINITY)
-                    {
-                        char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
-                        for(int i = 0; i < first_comma_index; i++)
-                        {
-                            data_left_placeholder[i] = data[i];
-                        }
-                        data_left_placeholder[first_comma_index] = '\0';
-                        data_left = atof(data_left_placeholder);
+                    while(data_left > 0) {
+                        if (data_left == INFINITY) {
+                            printf("data before INFINITY: %s\n", data);
+                            char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
+                            for (int i = 0; i < first_comma_index; i++) {
+                                data_left_placeholder[i] = data[i];
+                            }
+                            data_left_placeholder[first_comma_index] = '\0';
+                            data_left = atof(data_left_placeholder);
+                            printf("data left during INFINITY: %f\n", data_left);
 
-                        char*data_placeholder = malloc(sizeof(char) * strlen(data));
-                        for(int i = first_comma_index + 1; i < strlen(data); i++)
-                        {
-                            data_placeholder[i-first_comma_index-1] = data[i];
+                            char *data_placeholder = malloc(sizeof(char) * strlen(data));
+                            for (int i = first_comma_index + 1; i < strlen(data); i++) {
+                                data_placeholder[i - first_comma_index - 1] = data[i];
+                            }
+                            data_placeholder[strlen(data) - first_comma_index - 1] = '\0';
+                            strcpy(data, data_placeholder);
+                            printf("data after INFINITY: %s\n", data);
                         }
-                        data_placeholder[strlen(data)-first_comma_index-1] = '\0';
-                        strcpy(data, data_placeholder);
-                    }
-                    if(strlen(data) <= data_left)
-                    {
-                        for(int i = data_left; i < strlen(data); i++)
-                        {
-                            extra_data[i] = data[i];
+                        if (strlen(data) > data_left) {
+                            printf("data is: %s\n",data);
+                            printf("data length is: %ld\n", strlen(data));
+                            printf("the data is fat as fuck lol\ndata left is: %f\n",data_left);
+                            //char* extra_data_TWO = calloc(strlen(data),sizeof(char));
+                            //printf("finished alloc for edata2");
+                            char* extra_data_two = malloc(sizeof(data));
+                            strncpy(extra_data_two, data + (int)data_left, strlen(data) - (int)data_left);
+                            printf("reached past alloc, looking at start of: %d\n",(int)data_left);
+                            //printf("data start is also: %s",data[0] + '0');
+                            //for (int i = (int)data_left; i < strlen(data); i++) {
+                                //printf("we are looking at %d",i);
+                                //printf("look at data[i]: %s\n",data[i]);
+                                //extra_data_two[i] = data[i] + '0';
+                            //}
+                            //printf("e data TWO after execution: %s\n",extra_data_TWO);
+                            //free(extra_data);
+                            printf("extra data2 rn is: %s\n",extra_data_two);
+                            char* extra_data = extra_data_two;
+                            //strcpy(extra_data,extra_data_two);
+                            //free(extra_data_two);
+                            printf("e data ONE after execution: %s\n",extra_data);
+                            printf("is this the topsize error lol ORIGINAL!!!\n");
+                            char *ds_save = malloc(sizeof(data));
+                            printf("is this the topsize error lol!!!\n");
+                            strncpy(ds_save, data, data_left);
+                            //for (int i = 0; i < data_left; i++) {
+                                //ds_save[i] = data[i];
+                            //}
+                            printf("reached?poststrncpy\n");
+                            strcpy(data, ds_save);
+                            data_left = 0;
+                            printf("reached?poststrncpy????!?!?!? data: %s\n",data);
+                        } else {
+                            data_left -= strlen(data);
                         }
-                        char *ds_save = malloc(sizeof(char) * strlen(data));
-                        for(int i = 0 ; i < data_left; i ++)
-                        {
-                            ds_save[i] = data[i];
-                        }
-                        strcpy(data, ds_save);
-                        data_left = 0;
+                        strcat(f_data, data);
                     }
-                    else
-                    {
-                        data_left -= strlen(data);
-                    }
-                    strcat(f_data, data);
 
+                    printf("f_data after execution: %s\n",f_data);
                     struct comma_indices ci;
                                 
                     int comma_index_one = init_comma_indices(f_data).comma_index_one;
                     int comma_index_two = init_comma_indices(f_data).comma_index_two;
                     int comma_index_three = init_comma_indices(f_data).comma_index_three;
+
+                    printf("is this even reached??\n");
+                    data_exitcode = get_exit_code(f_data, comma_index_one);
+                    data_stdout = get_stdout(f_data, comma_index_one, comma_index_two);
+                    data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
+                    data_fcount = get_fcount(f_data, comma_index_three);
+                    printf("is this even reached?? X2\n");
 
                     if(data_exitcode != 0)
                     {
@@ -627,16 +692,13 @@ void process_actions_TWO()
                     }
                     if(data_stdout == 1)
                     {
-                        char*output = malloc(sizeof(char) * BUFFSIZE);
-                        output, extra_data = read_data(sock, extra_data, false);
-
-                        printf("OUTPUT-->%s\n", extra_data);
+                        printf("extra data to stdout: %s\n",extra_data);
+                        extra_data = read_data(sock, extra_data, false);
                     }
                     
                     if(data_stderr == 1)
                     {
-                        char*output = malloc(sizeof(char) * BUFFSIZE);
-                        output, extra_data = read_data(sock, extra_data, false);
+                        extra_data = read_data(sock, extra_data, false);
 
                         printf("ERROR-->%s\n", extra_data);
                     }
@@ -644,6 +706,7 @@ void process_actions_TWO()
                     for(int i = 0; i < data_fcount; i++)
                     {
                         extra_data = read_data(sock, extra_data, true);
+                        printf("EXITED FILE!!!!!! WOOOOOOO!!!!!!!!!!! (%d/%d)\n",i+1,data_fcount);
                     }
                 }
             }
