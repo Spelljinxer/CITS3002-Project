@@ -51,56 +51,59 @@ void read_rakefile(char *rakefile){
     while (fgets (buffer, BUFFSIZE, fptr))
     {
         buffer[strcspn (buffer, "#\r\n")] = 0;  /* trim comment or line-ending */
-
-        if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
-        {
-
-            if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
+        if(strlen(buffer) > 2)
+        { 
+            if (StartsWith(buffer, "\t")) //check if line is one tabbed - these are the "actions"
             {
 
-                char **splitreqs = strsplit(buffer, &nwords);
-                actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
-
-                for (int x = 1; x < nwords; x++)
+                if (StartsWith(buffer, "\t\t")) //check if line is two tabs - these are the "requires"
                 {
-                    actionsets[setnum][actionnum-1].requirementnum++;
-                    actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
-                    actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
+
+                    char **splitreqs = strsplit(buffer, &nwords);
+                    actionsets[setnum][actionnum-1].requirements = malloc((nwords-1) * sizeof(char*));
+
+                    for (int x = 1; x < nwords; x++)
+                    {
+                        actionsets[setnum][actionnum-1].requirementnum++;
+                        actionsets[setnum][actionnum-1].requirements[x-1] = malloc(sizeof(splitreqs[x]));
+                        actionsets[setnum][actionnum-1].requirements[x-1] = strdup(splitreqs[x]);
+                    }
+                }
+                else
+                {
+                    strcpy(actionsets[setnum][actionnum].actionCommand, trimwhitespace(buffer));
+                    actionsets[setnum][actionnum].requirementnum = 0;
+                    actionnum++;
                 }
             }
+
             else
             {
-                strcpy(actionsets[setnum][actionnum].actionCommand, trimwhitespace(buffer));
-                actionsets[setnum][actionnum].requirementnum = 0;
-                actionnum++;
-            }
-        }
-
-        else
-        {
-            if(strstr(buffer, "PORT"))
-            {
-                char **words = strsplit(buffer, &nwords);
-                portnumber = atoi(words[2]);
-            }
-            else if(strstr(buffer, "HOSTS"))
-            {
-                char **words = strsplit(buffer, &nwords);
-                for(int i = 2; i < nwords; i++)
+                if(strstr(buffer, "PORT"))
                 {
-                    strcpy(hosts[i-1], words[i]);
+                    char **words = strsplit(buffer, &nwords);
+                    portnumber = atoi(words[2]);
                 }
-            }
-            else if (strstr(buffer, ":"))
-            {
-                if (setnum != -1) {
-                    actioncounts[setnum] = actionnum;
+                else if(strstr(buffer, "HOSTS"))
+                {
+                    char **words = strsplit(buffer, &nwords);
+                    for(int i = 2; i < nwords; i++)
+                    {
+                        strcpy(hosts[i-1], words[i]);
+                    }
                 }
-                setnum++;
-                setcount++;
+                else if (strstr(buffer, ":"))
+                {
+                    if (setnum != -1) 
+                    {
+                        actioncounts[setnum] = actionnum;
+                    }
+                    setnum++;
+                    setcount++;
 
-                actionnum = 0;
+                    actionnum = 0;
 
+                }
             }
         }
     }
@@ -114,7 +117,7 @@ void read_rakefile(char *rakefile){
 //---------------------------- QUOTE_SERVERS() --------------------------------------------------
 struct sockinfo
 {
-    char *host; 
+    char *host;
     int port; 
     int port_array[BUFFSIZE];
     char **host_array;
@@ -276,7 +279,7 @@ struct sockinfo quote_servers(int index)
             }
         }
         
-        close(connections[connections_index]);
+        shutdown(connections[connections_index], SHUT_RDWR);
         connections_index++;
         if(connections[connections_index] == 0)
         {
@@ -450,221 +453,210 @@ char *read_data(int sock, char*extra_data, bool is_File)
         fptr = fopen(filename, "w");
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
+        
         return extra_data;
     }
 }
 
 //---------------------------- PROCESS_ACTIONS() --------------------------------------------------
 
-//printf("%s\n", actionsets[s_index][a_index].actionCommand);
-void process_actions()
+void process_actions_TWO()
 {
-    int valread;
-    int connections[BUFFSIZE];
-    for (int s_index = 0; s_index < setcount; s_index++)
+    struct sockinfo info;
+    for(int s_index = 0; s_index < setcount; s_index++)
     {
+        int connection_num = 0;
+        int valread;
+        int connections[1024];
         bool shit = false;
         int sock = 0, client_fd;
+        
+        struct sockaddr_in serv_addr;
+        serv_addr.sin_family = AF_INET;
+
         for(int a_index = 0; a_index < actioncounts[s_index]; a_index++)
         {
             char*curraction = actionsets[s_index][a_index].actionCommand;
-            char*remote = get_first_seven_chars(curraction);
-            if(strlen(curraction) > 1)
+
+            char*remote = malloc(sizeof(char) * BUFFSIZE);
+            for(int i = 0; i < 7; i++)
             {
-
-                struct sockaddr_in serv_addr;
-                serv_addr.sin_family = AF_INET;
-
-
-                if(strcmp(remote, "remote-") == 0)
-                {
-                    char* remote_action = malloc(sizeof(char) * strlen(curraction));
-                    for(int i = 7; i < strlen(curraction); i++)
-                    {
-                        remote_action[i-7] = curraction[i];
-                    }
-                    remote_action[strlen(curraction)-7] = '\0';
-                    strcpy(curraction, remote_action);
-                    printf("R-OUTGOING--> %s\n", curraction);
-                    serv_addr.sin_port = htons(portnumber);
-
-                    sock = socket(AF_INET, SOCK_STREAM, 0);
-                    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
-                    {
-                        printf("\nInvalid address/ Address not supported \n");
-                        exit(1);
-                    }
-                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr), portnumber);
-                }
-                else
-                {
-                    printf("OUTGOING--> %s\n", curraction);
-                    struct sockinfo info = quote_servers(s_index);
-                    char*hostname_exec = info.host;
-                    if(strcmp(hostname_exec, "localhost") == 0)
-                    {
-                        hostname_exec = "127.0.0.1";
-                    }
-                    int port_exec = info.port;
-                    serv_addr.sin_port = htons(info.port);
-                    sock = socket(AF_INET, SOCK_STREAM, 0);
-                    if(inet_pton(AF_INET, hostname_exec, &serv_addr.sin_addr) <= 0)
-                    {
-                        printf("\nInvalid address/ Address not supported \n");
-                        exit(1);
-                    }
-                    client_fd = test_client_fd(client_fd, sock, serv_addr, sizeof(serv_addr), port_exec);
-                }
-
-                char*action = "action,";
-                char*msg = malloc(sizeof(action) * strlen(curraction) + 1);
-                strcpy(msg, action);
-                strcat(msg, curraction);
-                send(sock, msg, strlen(msg), 0);
-                connections[s_index] = sock;
+                remote[i] = curraction[i];
             }
-            printf("\n"); //next actionset
-            
-            for(int i = 0; i < setcount; i++)
+            remote[strlen(curraction)] = '\0';
+            if(strcmp(remote, "remote-") == 0)
             {
-                if(connections[i] != 0)
+                char*remote_action = malloc(sizeof(char) * strlen(curraction));
+                for(int i = 7; i < strlen(curraction); i++)
+                {
+                    remote_action[i-7] = curraction[i];
+                }
+                remote_action[strlen(curraction)-7] = '\0';
+                memset(curraction, 0 , sizeof(curraction));
+                strcpy(curraction, remote_action);
+                printf("R-OUTGOING--> %s\n", curraction);
+
+                serv_addr.sin_port = htons(portnumber);
+                sock = socket(AF_INET, SOCK_STREAM, 0);
+                inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr); //RIGHT NOW CONNECT TO LOCALHOST
+                if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+                {
+                    printf("\nConnection Failed\n");
+                    exit(1);
+                }
+                connection_num++;
+            }
+            else
+            {
+                printf("OUTGOING--> %s\n", curraction);
+                // info.host = quote_servers(s_index).host;
+                // info.port = quote_servers(s_index).port;  //DONT USE THESE FOR NOW
+                serv_addr.sin_port = htons(6239);
+                
+                sock = socket(AF_INET, SOCK_STREAM, 0);
+                inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
+                if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+                {
+                    printf("\nConnection Failed\n");
+                    exit(1);
+                } 
+                connection_num++;
+            }
+
+            char*action = "action,";
+            char*msg = malloc(sizeof(action) * strlen(curraction) + 1);
+            strcpy(msg, action);
+            strcat(msg, curraction);
+            send(sock, msg, strlen(msg), 0);
+            connections[s_index] = sock;
+        }
+        
+        int total_actions = 0;
+        for(int i = 0; i < setcount; i++)
+        {
+           total_actions += actioncounts[i];
+        }
+        while(total_actions > 0)
+        {
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(sock, &readfds);
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
+            int retval = select(sock + 1, &readfds, NULL, NULL, &tv);
+            if(retval == -1)
+            {
+                printf("ERROR: select()\n");
+                exit(1);
+            }
+            else if(retval)
+            {
+                if(FD_ISSET(sock, &readfds))
                 {
                     char buffer[1024] = {0};
-                    fd_set readfds;
-                    FD_ZERO(&readfds);
-                    FD_SET(connections[i], &readfds);
-                    struct timeval tv;
-                    tv.tv_sec = 0;
-                    tv.tv_usec = 100000;
-                    int retval = select(connections[i] + 1, &readfds, NULL, NULL, &tv);
-                    if(retval > 0)
+                    valread = read(sock, buffer, 1024);
+                    int data_exitcode;
+                    int data_stdout;
+                    int data_stderr;
+                    int data_fcount;
+                    float data_left = INFINITY;
+                    char *data_left_placeholder = malloc(sizeof(char) * strlen(buffer));
+                    char*data = malloc(sizeof(char) * strlen(buffer));
+                    char*extra_data = malloc(sizeof(char) * strlen(buffer));
+                    char*f_data = malloc(sizeof(char) * strlen(buffer));
+                    strcpy(data, buffer);
+                    //printf("INCOMING<-- %s\n", buffer);
+                    int first_comma_index = 0;
+                    for(int i = 0; i < strlen(buffer); i++)
                     {
-                        if(FD_ISSET(connections[i], &readfds))
+                        if(buffer[i] == ',')
                         {
-                            valread = read(connections[i], buffer, 1024);
-                            if(valread == 0)
-                            {
-                                printf("Connection closed\n");
-                                connections[i] = 0;
-                            }
-                            else
-                            {
-                                //printf("INCOMING<---%s\n", buffer);
-                                float data_left = INFINITY;
-                                char *data_left_placeholder = malloc(sizeof(char) * strlen(buffer));
-                                char*data = malloc(sizeof(char) * strlen(buffer));
-                                char*extra_data = malloc(sizeof(char) * strlen(buffer));
-                                char*f_data = malloc(sizeof(char) * strlen(buffer));
-                                strcpy(data, buffer);
-
-                                int first_comma_index = 0;
-                                for(int i = 0; i < strlen(buffer); i++)
-                                {
-                                    if(buffer[i] == ',')
-                                    {
-                                        first_comma_index = i;
-                                        break;
-                                    }
-                                }
-
-                                if(data_left == INFINITY)
-                                {
-                                    char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
-                                    for(int i = 0; i < first_comma_index; i++)
-                                    {
-                                        data_left_placeholder[i] = data[i];
-                                    }
-                                    data_left = atof(data_left_placeholder);
-
-                                    char*data_placeholder = malloc(sizeof(char) * strlen(data));
-                                    for(int i = first_comma_index + 1; i < strlen(data); i++)
-                                    {
-                                        data_placeholder[i-first_comma_index-1] = data[i];
-                                    }
-                                    strcpy(data, data_placeholder);
-                                }
-
-                                if(strlen(data) <= data_left)
-                                {
-                                    for(int i = data_left; i < strlen(data); i++)
-                                    {
-                                        extra_data[i] = data[i];
-                                    }
-                                    char *ds_save = malloc(sizeof(char) * strlen(data));
-                                    for(int i = 0 ; i < data_left; i ++)
-                                    {
-                                        ds_save[i] = data[i];
-                                    }
-                                    strcpy(data, ds_save);
-                                    data_left = 0;
-                                }
-                                else
-                                {
-                                    data_left -= strlen(data);
-                                }
-                                strcat(f_data, data);
-                                
-                                
-
-                                char *data_exitcode_hold = malloc(strlen(f_data) + 1);
-                                char *data_stdout_hold = malloc(strlen(f_data) + 1);
-                                char *data_stderr_hold = malloc(strlen(f_data) + 1);
-                                char *data_fcount_hold = malloc(strlen(f_data) + 1);
-
-
-                                struct comma_indices ci;
-                                
-                                int comma_index_one = init_comma_indices(f_data).comma_index_one;
-                                int comma_index_two = init_comma_indices(f_data).comma_index_two;
-                                int comma_index_three = init_comma_indices(f_data).comma_index_three;
-
-                                int data_exitcode = get_exit_code(f_data, comma_index_one);
-                                int data_stdout = get_stdout(f_data, comma_index_one, comma_index_two);
-                                int data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
-                                int data_fcount = get_fcount(f_data, comma_index_three);
-                                
-                            
-                                if(data_exitcode != 0)
-                                {
-                                    shit = true;
-                                }
-                                printf("data_stdout : %d\n", data_stdout);
-                                if(data_stdout == 1)
-                                {
-
-                    
-                                    char*output = malloc(sizeof(char) * BUFFSIZE);
-                                    output, extra_data = read_data(sock, extra_data, false);
-
-                                    printf("OUTPUT-->%s\n", extra_data);
-                                }
-                                
-                                if(data_stderr == 1)
-                                {
-                                    char*output = malloc(sizeof(char) * BUFFSIZE);
-                                    output, extra_data = read_data(sock, extra_data, false);
-
-                                    printf("ERROR-->%s\n", extra_data);
-                                }
-
-                                for(int i = 0; i < data_fcount; i++)
-                                {
-                                    extra_data = read_data(sock, " ", true);
-                                }
-                            } 
+                            first_comma_index = i;
+                            break;
                         }
                     }
-                }
-                if(shit)
-                {
-                    printf("TERMINATED--> actionset %d\n", s_index+1);
-                    break;
+
+                    if(data_left == INFINITY)
+                    {
+                        char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
+                        for(int i = 0; i < first_comma_index; i++)
+                        {
+                            data_left_placeholder[i] = data[i];
+                        }
+                        data_left_placeholder[first_comma_index] = '\0';
+                        data_left = atof(data_left_placeholder);
+
+                        char*data_placeholder = malloc(sizeof(char) * strlen(data));
+                        for(int i = first_comma_index + 1; i < strlen(data); i++)
+                        {
+                            data_placeholder[i-first_comma_index-1] = data[i];
+                        }
+                        data_placeholder[strlen(data)-first_comma_index-1] = '\0';
+                        strcpy(data, data_placeholder);
+                    }
+                    if(strlen(data) <= data_left)
+                    {
+                        for(int i = data_left; i < strlen(data); i++)
+                        {
+                            extra_data[i] = data[i];
+                        }
+                        char *ds_save = malloc(sizeof(char) * strlen(data));
+                        for(int i = 0 ; i < data_left; i ++)
+                        {
+                            ds_save[i] = data[i];
+                        }
+                        strcpy(data, ds_save);
+                        data_left = 0;
+                    }
+                    else
+                    {
+                        data_left -= strlen(data);
+                    }
+                    strcat(f_data, data);
+
+                    struct comma_indices ci;
+                                
+                    int comma_index_one = init_comma_indices(f_data).comma_index_one;
+                    int comma_index_two = init_comma_indices(f_data).comma_index_two;
+                    int comma_index_three = init_comma_indices(f_data).comma_index_three;
+
+                    if(data_exitcode != 0)
+                    {
+                        shit = true;
+                    }
+                    if(data_stdout == 1)
+                    {
+                        char*output = malloc(sizeof(char) * BUFFSIZE);
+                        output, extra_data = read_data(sock, extra_data, false);
+
+                        printf("OUTPUT-->%s\n", extra_data);
+                    }
+                    
+                    if(data_stderr == 1)
+                    {
+                        char*output = malloc(sizeof(char) * BUFFSIZE);
+                        output, extra_data = read_data(sock, extra_data, false);
+
+                        printf("ERROR-->%s\n", extra_data);
+                    }
+
+                    for(int i = 0; i < data_fcount; i++)
+                    {
+                        extra_data = read_data(sock, extra_data, true);
+                    }
                 }
             }
-
+            total_actions--;
+            if(shit)
+            {
+                printf("TERMINATED--> actionset %d\n", s_index+1);
+                break;
+            }
         }
     }
 }
+
 
 //--------------------------------------------------------------------------------------------------------------------------
 
@@ -672,9 +664,10 @@ int main(int argc, char* argv[])
 {
     //extract_line_data(argv[1]);
     read_rakefile(argv[1]);
-    process_actions();
+    process_actions_TWO();
+    
 
-    printf("-------- REQUIREMENTS --------\n");
+    //printf("-------- REQUIREMENTS --------\n");
     // for(int i = 0; i < 10; i++)
     // {
     //     for(int j = 0; j < 10; j++)
@@ -694,7 +687,7 @@ int main(int argc, char* argv[])
     //         }
     //     }
     //  }
-     printf("--------------------ACTION COMMANDS------------------------\n");
+    //printf("--------------------ACTION COMMANDS------------------------\n");
     //  for(int i = 0; i < 10; i++)
     //  {
     //      for(int j = 0; j < actioncounts[i]; j++)
