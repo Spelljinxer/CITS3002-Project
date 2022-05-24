@@ -502,7 +502,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 
 //---------------------------- PROCESS_ACTIONS() --------------------------------------------------
 
-void process_actions_TWO()
+void process_actions()
 {
     //printf("reached ig?");
     struct sockinfo info;
@@ -711,9 +711,8 @@ void process_actions_TWO()
 
 int main(int argc, char* argv[]) 
 {
-    //extract_line_data(argv[1]);
     read_rakefile(argv[1]);
-    process_actions_TWO();
+    process_actions();
     
     return 0;
 }
