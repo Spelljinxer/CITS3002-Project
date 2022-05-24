@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include "strsplit.c"
 #include "c-client.h"
+//TODO: remove errno.h
+#include <errno.h>
 //-------------------------------------------------------------------------
 
 char buffer[BUFFSIZE];
@@ -192,7 +194,6 @@ struct sockinfo quote_servers(int index)
                 send(sock_socket , message, strlen(message) , 0 );
                 connections[connection_num] = sock_socket;
                 connection_num++;
-                printf("OUTGOING-->");
             }
         }
         
@@ -227,6 +228,7 @@ struct sockinfo quote_servers(int index)
         else if(retval >= 0)
         {
             for (int i = 0; i < total_connections; i++) {
+                //printf("top reach\n");
                 if(FD_ISSET(connections[i], &readfds) && connections[i] > 0) {
 
                     char buffer[1024] = {0};
@@ -319,7 +321,7 @@ struct sockinfo quote_servers(int index)
 char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 {
     int data_left = -1;
-    char *f_data = calloc(strlen(extra_data),sizeof(char));
+    char *f_data = calloc(strlen(extra_data) + 1,sizeof(char));
     //printf("extra_data pre execution: %s\n",extra_data);
     if(extra_data[0] != '\0')
     {
@@ -376,7 +378,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 
             //set f_data to f_data[:data_left]
             int f_data_index = 0;
-            char*f_data_TWO = malloc(sizeof(char) * strlen(f_data));
+            char*f_data_TWO = malloc(sizeof(char) * (strlen(f_data) + 1));
             while(f_data[f_data_index] != '\0' && f_data_index < dl_as_int )
             {
                 f_data_TWO[f_data_index] = f_data[f_data_index];
@@ -386,30 +388,22 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
             strcpy(f_data, f_data_TWO);
             free(f_data_TWO);
             data_left = 0;
-            //printf("f_data extra payload even after extra_data: %s\n",f_data);
-            //printf("extra_data extra payload even after extra_data: %s\n",extra_data);
         }
 
         else
         {
-            //memset(extra_data, 0 , sizeof(extra_data)); //CHECK IF THIS ACTUALLY WORKS
             free(extra_data);
             extra_data = calloc(strlen(extra_data), sizeof(char));
-            //strcpy(extra_data, " ");
             data_left -= strlen(f_data);
         }
     }
     while(data_left > 0 || data_left == -1)
     {
         char buffer_data[BUFFSIZE] = { 0 };
-        int valread;
-        //valread = read(sock, buffer_data, BUFFSIZE);
-        valread = recv(sock, buffer_data, BUFFSIZE, NULL);
-        printf("%BUFFER DATA!!!!!!!!!!!!%s", buffer_data);
+        int valread = read(sock, buffer_data, 1024);
+
         if(valread)
         {
-            //printf("buffer data pre INFINITY check readdata: %s\n", buffer_data);
-            //printf("data left pre INFINITY check readdata: %f\n", data_left);
             if(data_left == -1)
             {
                 int first_comma_index = 0;
@@ -428,23 +422,18 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
                 }
                 data_left_placeholder[first_comma_index] = '\0';
                 data_left = atoi(data_left_placeholder);
-                //printf("data left during INFINITY readdata: %f\n", data_left);
                 char* buffer_data_copy = malloc(sizeof(char) * strlen(buffer_data));
                 for(int i = first_comma_index + 1; i < strlen(buffer_data); i++)
                 {
                     buffer_data_copy[i-first_comma_index-1] = buffer_data[i];
                 }
                 buffer_data_copy[strlen(buffer_data)-first_comma_index-1] = '\0';
-                //printf("buffer data copy is now: %s\n", buffer_data_copy);
                 strcpy(buffer_data, buffer_data_copy);
 
             }
 
-            //printf("buffer data pre check w/ dataleft: %s\n",buffer_data);
-            //printf("buffer length: %ld\n",strlen(buffer_data));
             if(strlen(buffer_data) > data_left)
             {
-                //printf("buffer length has extra data reached\n");
                 int dl_as_int = data_left;
                 extra_data = malloc(sizeof(char) *  strlen(buffer_data));
                 for(int i = dl_as_int; i < strlen(buffer_data); i++)
@@ -477,7 +466,6 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
     if(is_File == false && is_Err == false)
     {
         printf("OUTPUT--> %s\n", f_data);
-        //printf("extra_data returned: %s\n", extra_data);
         return extra_data;
     }
     else if (is_Err == true)
@@ -488,8 +476,6 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
     
     else
     {
-        printf("data left: %d", data_left);
-
         char*filename = malloc(sizeof(char) * strlen(f_data));
         char*data_to_write = malloc(sizeof(char) * strlen(f_data));
         int comma_index = 0;
@@ -506,20 +492,19 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
             filename[i] = f_data[i];
         }
         filename[comma_index] = '\0';
-        printf("filename: %s\n", filename);
 
         for(int i = comma_index + 1; i < strlen(f_data); i++)
         {
             data_to_write[i-comma_index-1] = f_data[i];
         }
         data_to_write[strlen(f_data)-comma_index-1] = '\0';
-        printf("data: %s\n", data_to_write);
 
         FILE *fptr;
         fptr = fopen(filename, "w");
         fprintf(fptr, "%s", data_to_write);
         
         fclose(fptr);
+        printf("FILE-->%s\n",filename);
 
         return extra_data;
     }
@@ -633,6 +618,7 @@ void process_actions()
                 for (int i = 0; i < total_connections; i++) {
                     if(FD_ISSET(connections[i], &readfds) && connections[i] > 0)
                     {
+                        printf("\nNEW-ACTION--> %d\n", total_connections - connection_num + 1);
                         char buffer_in[BUFFSIZE] = {0};
                         valread = read(connections[i], buffer_in, 1024);
                         //printf("INCOMING<-- %s\n", buffer_in);
@@ -646,7 +632,6 @@ void process_actions()
                         char* extra_data = calloc(strlen(buffer_in),sizeof(char));
                         char*f_data = malloc(sizeof(char) * strlen(buffer_in));
                         strcpy(data, buffer_in);
-                        printf("INCOMING<-- %s\n", data);
                         int first_comma_index = 0;
                         for(int i = 0; i < strlen(buffer_in); i++)
                         {
@@ -679,10 +664,6 @@ void process_actions()
 
                             if (strlen(data) > data_left)
                             {
-                                printf("data: %s\n",data);
-                                printf("data left: %d\n", data_left);
-
-                                free(extra_data);
                                 extra_data = malloc((strlen(data)-data_left + 1)*sizeof(char));
                                 int data_left_new = strlen(data) - data_left;
 
@@ -698,10 +679,6 @@ void process_actions()
                                 data = malloc(sizeof(new_data));
                                 strcpy(data, new_data);
                                 data_left = 0;
-
-                                printf("data: %s\n", new_data);
-                                //THIS HAS TO BE SOMEHOW FIXED IDK
-                                printf("extra data: %s\n", extra_data);
                             }
                             else
                             {
@@ -721,7 +698,6 @@ void process_actions()
                         data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
                         data_fcount = get_fcount(f_data, comma_index_three);
 
-
                         // printf("data_exitcode: %d\n", data_exitcode);
                         // printf("data_stdout: %d\n", data_stdout);
                         // printf("data_stderr: %d\n", data_stderr);
@@ -736,29 +712,32 @@ void process_actions()
                         {
                             extra_data = read_data(connections[i], extra_data, false, false);
                         }
+                        else
+                        {
+                            printf("OUTPUT--> None\n");
+                        }
 
                         if(data_stderr == 1)
                         {
                             extra_data = read_data(connections[i], extra_data, false, true);
                         }
 
-                        for(int i = 0; i < data_fcount; i++)
-                        {
-                            extra_data = read_data(connections[i], extra_data, true, false);
-                        }
+                        //for(int i = 0; i < data_fcount; i++)
+                        //{
+                        //    int socket_num = sock;
+                        //    extra_data = read_data(socket_num, extra_data, true, false);
+                        //}
                         free(extra_data);
                         shutdown(connections[i], SHUT_RDWR);
                         connections[i] = -1;
                         connection_num--;
-                        printf("Remaining connections: %d\n",connection_num);
-
                     }
                 }
             }
         }
         if(shit)
             {
-                printf("TERMINATED--> actionset %d\n", s_index+1);
+                printf("\nTERMINATED--> actionset %d returned errors\n", s_index+1);
                 exit(1);
             }
     }

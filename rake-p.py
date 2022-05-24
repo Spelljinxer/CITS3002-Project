@@ -5,15 +5,10 @@
 #   - Reiden Rufin 22986337
 import socket
 import select
-import sys
-from asyncio import subprocess
-from subprocess import Popen, PIPE
-import subprocess
 #--------------------------------------------------------------------------------------------------------------
 port = 0
 hosts = []
 actionsets = []
-
 
 
 # quotes servers for costs and shit
@@ -24,19 +19,13 @@ def quote_servers(index):
     for host in hosts:
         portnum = int(port)
 
-        if (host.count(':') > 0):
+        if host.count(':') > 0:
             portnum = int(host.split(":")[1])
             host = host.split(":")[0]
 
         sock = socket.socket()
         sock.connect((host, portnum))
 
-        #if len(actionsets[0][index]) > 1:
-                #requirements = " ".join(actionsets[0][index][1:])
-        #else:
-            #requirements = "None"
-
-        #print("\tRequirements:", requirements)
         message = "quote," + host + "," + str(portnum)
         sock.sendall(message.encode())
         connections.append(sock)
@@ -61,8 +50,8 @@ def quote_servers(index):
 
     return min_sock
 
+
 def parse_rakefile():
-    #TODO: remove these lines
     global port
     global hosts
     global actionsets
@@ -72,11 +61,11 @@ def parse_rakefile():
 
         for line in f:
             line = line.split("#", 1)[0].replace('\n','')
-            if (line != "" and len(line.replace(chr(9),"")) != 0):
+            if line != "" and len(line.replace(chr(9),"")) != 0:
                 # First check if the line is one-tabbed.
-                if (line[0] == chr(9)):
+                if line[0] == chr(9):
                     # Then check if line is two-tabbed.
-                    if (line[1] == chr(9)):
+                    if line[1] == chr(9):
                         # The 'requires' word is ignored, under the assumption of valid syntax.
                         actionsets[setnum][actionnum] += line.lstrip().split(" ")[1:]
                     # If it isn't, we assume it is one-tabbed.
@@ -92,13 +81,13 @@ def parse_rakefile():
                     line = line.strip()
 
                     # Adds the hosts into the hosts variable.
-                    if ("HOSTS" in line):
+                    if "HOSTS" in line:
                         hosts += line.split("=", 1)[1].split(" ")[1:]
                     # Adds the default port into the port variable.
-                    elif ("PORT" in line):
+                    elif "PORT" in line:
                         port = line.split("=")[1].replace(" ","")
                     # Adds an empty array into the actionset array and then increments the current set number.
-                    elif (":" in line):
+                    elif ":" in line:
                         setnum += 1
                         actionnum = -1
                         actionsets.append([])
@@ -111,7 +100,7 @@ def process_actions():
 
     # Iterates through every actionset in the parsed Rakefile data.
     for s_index, actionset in enumerate(actionsets):
-        shit = False
+        error_found = False
         connections = []
 
         # Iterates through every action in the current actionset, connecting to a host server to execute it.
@@ -119,42 +108,41 @@ def process_actions():
             # Selects the action command in the array for the action. (subsequent elemements are its requirements)
             curraction = action[0]
 
-            # Executes remote actions on the localhost. Non-remote actions are executed on the lowest costing server,
+            # Executes non-remote actions on the localhost. Remote actions are executed on the lowest costing server,
             # determined via quote_servers().
             if (action[0][:7] == "remote-"):
                 curraction = curraction[7:]
                 print("R-OUTGOING--> " + curraction)
-                # TODO: confirm if this is true
-                sock = socket.socket()
-                sock.connect(('localhost', int(port)))
-            else:
-                # curraction = curraction[]
-                print("OUTGOING--> " + curraction)
                 sockinfo = quote_servers(a_index)
                 sock = socket.socket()
                 sock.connect(sockinfo)
+            else:
+                print("OUTGOING--> " + curraction)
+                sock = socket.socket()
+                sock.connect(('localhost', int(port)))
 
             # Data is sent to the connected socket and the socket is stored in a list of open connections.
             message = "action," + curraction
             sock.sendall(message.encode())
             connections.append(sock)
 
-        print("")
+        action_count = 0
         # Iterates through every socket connected to a server, checking if any data is ready to be received.
         while connections:
             ready, empty, error = select.select(connections, [], connections)
             for sock in ready:
+                action_count += 1
+                print("\nNEW-ACTION--> " + str(action_count))
                 # For each socket, the initial data payload is first read.
                 # "datasize,exitcode,stdout,stderr,filecount"
                 # stdout/stderr = 1 when they are present
                 data_left = float('inf')
                 f_data = ""
                 extra_data = ""
-                recv_size = 1024
 
                 while data_left > 0:
                     data = sock.recv(1024)
-                    print(data)
+
                     if data:
                         data = data.decode()
                         if data_left == float('inf'):
@@ -162,11 +150,7 @@ def process_actions():
                             data_left = int(data[0])
                             data = ",".join(data[1:])
 
-                        # print("data : ", data)
-                        # print("len(data) : ", str(len(data)))
-                        # print("data_left : ", data_left)
                         # If this is true, some additional data was sent through.
-                        
                         if len(data) > data_left:
                             extra_data = data[data_left:]
                             data = data[:data_left]
@@ -180,23 +164,21 @@ def process_actions():
                 data_stdout = int(f_data[1])
                 data_stderr = int(f_data[2])
                 data_fcount = int(f_data[3])
-                print("data_exitcode : ", data_exitcode)
-                print("data_stdout : ", data_stdout)
-                print("data_stderr : ", data_stderr)
-                print("data_fcount : ", data_fcount)
+
                 if data_exitcode != 0:
-                    shit = True
+                    error_found = True
 
                 if data_stdout == 1:
                     output, extra_data = read_data(sock, extra_data, False)
-                    
-                    if data_stderr == 1:
-                        output = "".join(output.rsplit('\n', output.count('\n')))
-                        
+
                     print("OUTPUT--> " + output)
+                else:
+                    print("OUTPUT--> " + "None")
+
 
                 if data_stderr == 1:
                     output, extra_data = read_data(sock, extra_data, False)
+
                     print("ERROR--> " + output)
 
                 for files in range(0, data_fcount):
@@ -205,10 +187,11 @@ def process_actions():
                 sock.close()
                 connections.remove(sock)
 
-        # Shit happened.
-        if (shit):
+        # Prematurely terminate the program if any action fails.
+        if error_found:
             print("TERMINATED--> actionset " + str(s_index + 1))
             break
+
 
 def read_data(sock, extra_data, is_file=True):
     data_left = float('inf')
@@ -247,16 +230,15 @@ def read_data(sock, extra_data, is_file=True):
             
             f_data += data
 
-    #TODO: For debugging purposes.
-    #df_data = "".join(f_data.rsplit('\n', f_data.count('\n')))
-
     if not is_file: return f_data, extra_data
     else:
         f_data = f_data.split(",")
         file = open(f_data[0],'w')
         file.write(f_data[1])
         file.close()
+        print("FILE--> " + f_data[0])
         return extra_data
+
 
 parse_rakefile()
 process_actions()
