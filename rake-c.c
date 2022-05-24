@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include "strsplit.c"
 #include "c-client.h"
-//TODO: remove errno.h
-#include <errno.h>
 //-------------------------------------------------------------------------
 
 char buffer[BUFFSIZE];
@@ -28,11 +26,6 @@ struct {
 
 int setcount = 0;
 int actioncounts[BUFFSIZE];
-
-// actionsets[actionsetnum][???] will be the max length for the first array
-// actionsets[0][actioncounts[0]] will be the max length for the second array of the first index
-// actionsets[1][actioncounts[1]] will be the max length for the second array of the second index
-// requirements are already dynamic, so there's no need to change it
 
 //---------------------------------------------------------------------------------------------
 
@@ -110,7 +103,6 @@ void read_rakefile(char *rakefile){
         }
     }
     actioncounts[setnum] = actionnum;
-    //printf("total_action_count at [%d]: %d\n", setnum, total_action_count);
     fclose(fptr);
 }
 
@@ -132,7 +124,6 @@ struct sockinfo quote_servers(int index)
     int connections [BUFFSIZE];
     float min_cost = INFINITY;
     int connection_num = 0;
-    // for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
     for(size_t i = 0; i < sizeof(hosts) / sizeof(hosts[0]); i++)
     {
         if(strlen(hosts[i]) > 0)
@@ -155,8 +146,6 @@ struct sockinfo quote_servers(int index)
                     quoteinfo.host_array[i] = strdup(hostname);
                     quoteinfo.port_array[i] = port_split;
                 }
-                
-                //printf("quoteinfo.host_array[%ld]: %s\n", i, quoteinfo.host_array[i]);
                 
                 if(strcmp(hosts[i], "localhost") == 0)
                 {
@@ -190,7 +179,6 @@ struct sockinfo quote_servers(int index)
                 int port_int = quoteinfo.port_array[i];
                 sprintf(port_string, "%d", port_int); //Cast to string
                 concatenate_quote(message, quote, comma, hosts[i], port_string);
-                //printf("OUTGOING--> %s\n", message);
                 send(sock_socket , message, strlen(message) , 0 );
                 connections[connection_num] = sock_socket;
                 connection_num++;
@@ -204,7 +192,6 @@ struct sockinfo quote_servers(int index)
     int total_connections = connection_num;
     while(connection_num > 0)
     {
-        //printf("reached ig? - connec quote");
         FD_ZERO(&readfds);
         int max_fd = 0;
 
@@ -228,7 +215,6 @@ struct sockinfo quote_servers(int index)
         else if(retval >= 0)
         {
             for (int i = 0; i < total_connections; i++) {
-                //printf("top reach\n");
                 if(FD_ISSET(connections[i], &readfds) && connections[i] > 0) {
 
                     char buffer[1024] = {0};
@@ -312,8 +298,6 @@ struct sockinfo quote_servers(int index)
 
 
     }
-    // printf("finalinfo.host = %s\n", finalinfo.host);
-    // printf("finalinfo.port = %d\n", finalinfo.port);
     return finalinfo;            
 }
 
@@ -322,10 +306,8 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 {
     int data_left = -1;
     char *f_data = calloc(strlen(extra_data) + 1,sizeof(char));
-    //printf("extra_data pre execution: %s\n",extra_data);
     if(extra_data[0] != '\0')
     {
-        //printf("Extra data exists reached: %s\n", extra_data);
         int first_comma = 0;
         for(int i = 0; i < strlen(extra_data); i++)
         {
@@ -348,11 +330,8 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
         }
         f_data[strlen(extra_data)-first_comma-1] = '\0';
 
-        //printf("f_data in the middle of extra data check: %s\n", f_data);
-
         if(strlen(f_data) > data_left)
         {
-            //printf("len of fdata exceeds data left in extra data check\n");
             int max_fdata_length = 0;
             for(int i = data_left; i < strlen(f_data); i++)
             {
@@ -366,7 +345,6 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
             int dl_as_int = data_left;
 
             max_fdata_length = strlen(f_data);
-            //printf("max fdata length is set to %d\n",max_fdata_length);
             extra_data[strlen(f_data)];
 
 
@@ -547,11 +525,18 @@ void process_actions()
                 remote_action[strlen(curraction)-7] = '\0';
                 memset(curraction, 0 , sizeof(curraction));
                 strcpy(curraction, remote_action);
-                printf("R-OUTGOING--> %s\n", curraction);
 
-                serv_addr.sin_port = htons(portnumber);
+                printf("OUTGOING--> %s\n", curraction);
+                info = quote_servers(s_index);
+                char*new_hostname = malloc(sizeof(char) * strlen(info.host));
+                strcpy(new_hostname, info.host);
+                if(strcmp(new_hostname, "localhost") == 0)
+                {
+                    new_hostname = "127.0.0.1";
+                }
+                serv_addr.sin_port = htons(info.port);
                 sock = socket(AF_INET, SOCK_STREAM, 0);
-                inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr); //RIGHT NOW CONNECT TO LOCALHOST
+                inet_pton(AF_INET, "new_hostname", &serv_addr.sin_addr);
                 if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
                 {
                     printf("\nConnection Failed\n");
@@ -561,18 +546,10 @@ void process_actions()
             }
             else
             {
-                printf("OUTGOING--> %s\n", curraction);
-                info = quote_servers(s_index); //TEST WITH a_index maybe
-                char*new_hostname = malloc(sizeof(char) * strlen(info.host));
-                strcpy(new_hostname, info.host);
-                if(strcmp(new_hostname, "localhost") == 0)
-                {
-                    new_hostname = "127.0.0.1";
-                }
-                serv_addr.sin_port = htons(info.port);
-                //printf("connecting to %s:%d\n", new_hostname, info.port);
+                printf("R-OUTGOING--> %s\n", curraction);
+                serv_addr.sin_port = htons(portnumber);
                 sock = socket(AF_INET, SOCK_STREAM, 0);
-                inet_pton(AF_INET, "new_hostname", &serv_addr.sin_addr);
+                inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
                 if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
                 {
                     printf("\nConnection Failed\n");
@@ -621,7 +598,6 @@ void process_actions()
                         printf("\nNEW-ACTION--> %d\n", total_connections - connection_num + 1);
                         char buffer_in[BUFFSIZE] = {0};
                         valread = read(connections[i], buffer_in, 1024);
-                        //printf("INCOMING<-- %s\n", buffer_in);
                         int data_exitcode;
                         int data_stdout;
                         int data_stderr;
@@ -698,11 +674,6 @@ void process_actions()
                         data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
                         data_fcount = get_fcount(f_data, comma_index_three);
 
-                        // printf("data_exitcode: %d\n", data_exitcode);
-                        // printf("data_stdout: %d\n", data_stdout);
-                        // printf("data_stderr: %d\n", data_stderr);
-                        // printf("data_fcount: %d\n", data_fcount);
-
                         if(data_exitcode != 0)
                         {
                             shit = true;
@@ -722,11 +693,6 @@ void process_actions()
                             extra_data = read_data(connections[i], extra_data, false, true);
                         }
 
-                        //for(int i = 0; i < data_fcount; i++)
-                        //{
-                        //    int socket_num = sock;
-                        //    extra_data = read_data(socket_num, extra_data, true, false);
-                        //}
                         free(extra_data);
                         shutdown(connections[i], SHUT_RDWR);
                         connections[i] = -1;
