@@ -453,7 +453,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
     }
     if(is_File == false && is_Err == false)
     {
-        printf("OUTPUT-->%s\n", f_data);
+        printf("OUTPUT--> %s\n", f_data);
         //printf("extra_data returned: %s\n", extra_data);
         return extra_data;
     }
@@ -647,7 +647,7 @@ void process_actions_TWO()
                         }
                         if (strlen(data) > data_left) 
                         {                           
-                            data_left = 0;
+                            data_left = 0; //THIS HAS TO BE SOMEHOW FIXED IDK
                         } 
                         else 
                         {
@@ -655,7 +655,7 @@ void process_actions_TWO()
                         }
                         strcat(f_data, data);
                     }
-                    //printf("f_data: %s\n", f_data);
+
                     struct comma_indices ci;
                                 
                     int comma_index_one = init_comma_indices(f_data).comma_index_one;
