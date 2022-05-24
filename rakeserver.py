@@ -60,7 +60,7 @@ def send_and_receive(sock):
             #time.sleep(os.getpid() % 5 + 2)
             command = Popen(data, shell=True, stdout=PIPE, stderr=PIPE)
             stdout, stderr = command.communicate()
-            fcount = 3
+            fcount = 0
 
             out, err = '0','0'
             if stdout: out = '1'
@@ -96,6 +96,3 @@ while keep_going:
         keep_going = False
     print("connected from:", address)
     send_and_receive(c)
-
-      
- 
