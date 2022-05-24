@@ -189,7 +189,7 @@ def process_actions():
 
         # Prematurely terminate the program if any action fails.
         if error_found:
-            print("TERMINATED--> actionset " + str(s_index + 1))
+            print("\nTERMINATED--> actionset " + str(s_index + 1) + " returned errors")
             break
 
 

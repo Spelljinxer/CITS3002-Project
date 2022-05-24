@@ -5,7 +5,7 @@ HOSTS = localhost #localhost:6239 localhost:6240
 
 actionset1:
 	remote-true
-	ls Rakefile not-a-file
+	#ls Rakefile not-a-file
 	remote-true
 	#remote-ls Rakefile not-a-file
 	echo starting actionset1 action 3
