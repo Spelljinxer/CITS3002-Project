@@ -201,10 +201,6 @@ int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t
         printf("Connection Failed\n");
         return -1;
     }
-    // else
-    // {
-    //     printf("Connected to (%s , %d)\n", inet_ntoa(serv_addr.sin_addr), portnumber);
-    // }
     return client_fd;
 }
 
@@ -297,9 +293,6 @@ void extract_line_data(char *rakefile)
 
     }
     fclose(fp);
-    // printf("total_actionset_lines: %d\n", total_actionset_count);
-    // printf("total_actions_length: %d\n", total_actions_count);
-    // printf("longest_requirements_line: %d\n", longest_requirements_line);
 }
 
 

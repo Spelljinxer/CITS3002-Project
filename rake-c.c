@@ -493,7 +493,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 void process_actions()
 {
     struct sockinfo info;
-    bool shit = false;
+    bool error_found = false;
     int connections[1024];
     int valread;
         
@@ -676,7 +676,7 @@ void process_actions()
 
                         if(data_exitcode != 0)
                         {
-                            shit = true;
+                            error_found = true;
                         }
 
                         if(data_stdout == 1)
@@ -701,7 +701,7 @@ void process_actions()
                 }
             }
         }
-        if(shit)
+        if(error_found)
             {
                 printf("\nTERMINATED--> actionset %d returned errors\n", s_index+1);
                 exit(1);
