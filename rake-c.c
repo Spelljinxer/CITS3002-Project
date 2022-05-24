@@ -650,7 +650,8 @@ void process_actions()
                             strcpy(data, data_placeholder);
                         }
                         if (strlen(data) > data_left)
-                        {                           
+                        {
+                            printf("data: %s",data);
                             data_left = 0; //THIS HAS TO BE SOMEHOW FIXED IDK
                         }
                         else 
@@ -701,12 +702,12 @@ void process_actions()
                     connection_num--;
                 }
             }
-            if(shit)
+        }
+        if(shit)
             {
                 printf("TERMINATED--> actionset %d\n", s_index+1);
                 exit(1);
             }
-        }
     }
 }
 
