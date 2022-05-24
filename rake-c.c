@@ -13,7 +13,7 @@
 
 char buffer[BUFFSIZE];
 
-char hosts[][BUFFSIZE] = {};
+char hosts[BUFFSIZE][BUFFSIZE] = {};
 
 int portnumber;
 
@@ -130,68 +130,72 @@ struct sockinfo quote_servers(int index)
     int connections [BUFFSIZE];
     float min_cost = INFINITY;
     int valread;
-    for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
+    // for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
+    for(size_t i = 0; i < sizeof(hosts) / sizeof(hosts[0]); i++)
     {
-        int portnum = portnumber;
-        
-        int sock_socket = 0,  client_socket;
-        struct sockaddr_in serv_addr;
-        sock_socket = socket(AF_INET, SOCK_STREAM, 0);
-        if(strlen(hosts[i]) > 0 )
+        if(strlen(hosts[i]) > 0)
         {
-            quoteinfo.host_array = malloc(sizeof(hosts[i]));
-            quoteinfo.host_array[i] = strdup(hosts[i]);
-            quoteinfo.port_array[i] = portnum;
+            int portnum = portnumber;
             
-            if(char_counter(hosts[i], ":") > 0)
+            int sock_socket = 0,  client_socket;
+            struct sockaddr_in serv_addr;
+            sock_socket = socket(AF_INET, SOCK_STREAM, 0);
+            if(strlen(hosts[i]) > 0 )
             {
-                char *hostname = strtok(hosts[i], ":");
-                int port_split = atoi(strtok(NULL, ":"));
-                quoteinfo.host_array[i] = strdup(hostname);
-                quoteinfo.port_array[i] = port_split;
-            }
-            
-            if(strcmp(hosts[i], "localhost") == 0)
-            {
-                //IDK WHY BUT C DOESNT CONNECT 'LOCALHOST' ONLY DIRECT IP
-                quoteinfo.host_array[i] = "127.0.0.1"; 
-            }
+                quoteinfo.host_array = malloc(sizeof(hosts[i]));
+                quoteinfo.host_array[i] = strdup(hosts[i]);
+                quoteinfo.port_array[i] = portnum;
+                
+                if(char_counter(hosts[i], ":") > 0)
+                {
+                    char *hostname = strtok(hosts[i], ":");
+                    int port_split = atoi(strtok(NULL, ":"));
+                    quoteinfo.host_array[i] = strdup(hostname);
+                    quoteinfo.port_array[i] = port_split;
+                }
+                
+                //printf("quoteinfo.host_array[%ld]: %s\n", i, quoteinfo.host_array[i]);
+                
+                if(strcmp(hosts[i], "localhost") == 0)
+                {
+                    quoteinfo.host_array[i] = "127.0.0.1"; 
+                }
+                
+                if (sock_socket < 0)
+                {
+                    printf("Could not create socket");
+                    exit(1);
+                }
+                memset(&serv_addr, '0', sizeof(serv_addr));
+                serv_addr.sin_family = AF_INET;
+                serv_addr.sin_port = htons(quoteinfo.port_array[i]);
+                if(inet_pton(AF_INET, quoteinfo.host_array[i], &serv_addr.sin_addr)<=0)
+                {
+                    printf("Invalid address/ Address not supported\n");
+                    exit(1);
+                }
+                if (connect(sock_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+                {
+                    printf("Connection Failed\n");
+                    exit(1);
+                }
+                
+                char*quote = "quote,";
+                char *comma = ",";
 
-            if (sock_socket < 0)
-            {
-                printf("Could not create socket");
-                exit(1);
+                char*message = malloc(sizeof(char) * BUFFSIZE);
+                char port_string[BUFFSIZE];
+                int port_int = quoteinfo.port_array[i];
+                sprintf(port_string, "%d", port_int); //Cast to string
+                concatenate_quote(message, quote, comma, hosts[i], port_string);
+                //printf("OUTGOING--> %s\n", message);
+                send(sock_socket , message, strlen(message) , 0 );
+                connections[i] = sock_socket;
             }
-            memset(&serv_addr, '0', sizeof(serv_addr));
-            serv_addr.sin_family = AF_INET;
-            serv_addr.sin_port = htons(quoteinfo.port_array[i]);
-            if(inet_pton(AF_INET, quoteinfo.host_array[i], &serv_addr.sin_addr)<=0)
-            {
-                printf("Invalid address/ Address not supported\n");
-                exit(1);
-            }
-            if (connect(sock_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-            {
-                printf("Connection Failed\n");
-                exit(1);
-            }
-            
-            char*quote = "quote,";
-            char *comma = ",";
-
-            char*message = malloc(sizeof(char) * BUFFSIZE);
-            char port_string[BUFFSIZE];
-            int port_int = quoteinfo.port_array[i];
-            sprintf(port_string, "%d", port_int); //Cast to string
-            concatenate_quote(message, quote, comma, hosts[i], port_string);
-            //printf("OUTGOING--> %s\n", message);
-            send(sock_socket , message, strlen(message) , 0 );
-            connections[i] = sock_socket;
         }
+        
     }
-    memset(quoteinfo.host_array, 0, sizeof(quoteinfo.host_array));
-    memset(quoteinfo.port_array, 0, sizeof(quoteinfo.port_array)); //idk why i empty it, could be removed
-
+    
     int connections_index = 1;
     while(connections[connections_index] != 0)
     {
@@ -202,12 +206,13 @@ struct sockinfo quote_servers(int index)
         FD_ZERO(&readfds);
         FD_SET(connections[connections_index], &readfds);
         retval = select(connections[connections_index]+1, &readfds, NULL, NULL, &tv);
+
         if(retval == -1)
         {
             printf("Select error\n");
             exit(1);
         }
-        else if(retval)
+        else if(retval >= 0)
         {
             char buffer[1024] = {0};
             valread = read(connections[connections_index], buffer, 1024);
@@ -245,6 +250,7 @@ struct sockinfo quote_servers(int index)
                         break;
                     }
                 }
+
                 //message e.g. "localhost,6238,90"
                 //this will run from "localhost" --> first ","
                 for(int i = 0; i < first_comma_index; i++)
@@ -480,8 +486,8 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
         {
             filename[i] = f_data[i];
         }
-        
         filename[comma_index] = '\0';
+
         for(int i = comma_index + 1; i < strlen(f_data); i++)
         {
             data_to_write[i-comma_index-1] = f_data[i];
@@ -494,8 +500,6 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
         
         fclose(fptr);
 
-        //printf("reached end of a file: %s\n",filename);
-        //printf("extra_data returned: %s\n", extra_data);
         return extra_data;
     }
 }
@@ -645,7 +649,7 @@ void process_actions()
                             data_placeholder[strlen(data) - first_comma_index - 1] = '\0';
                             strcpy(data, data_placeholder);
                         }
-                        if (strlen(data) > data_left) 
+                        if (strlen(data) > data_left)
                         {                           
                             data_left = 0; //THIS HAS TO BE SOMEHOW FIXED IDK
                         } 
