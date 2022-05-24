@@ -193,7 +193,7 @@ void test_socket_connecton(int socket, struct sockaddr_in server)
     // }
 }
 
-int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t serv_size)
+int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t serv_size, int portnumber)
 {
     client_fd = connect(sock, (struct sockaddr*)&serv_addr, serv_size);
     if(client_fd < 0)
@@ -203,7 +203,7 @@ int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t
     }
     // else
     // {
-    //     printf("Connected to server\n");
+    //     printf("Connected to (%s , %d)\n", inet_ntoa(serv_addr.sin_addr), portnumber);
     // }
     return client_fd;
 }
