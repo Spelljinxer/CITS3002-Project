@@ -15,6 +15,7 @@ hosts = []
 actionsets = []
 
 
+
 # quotes servers for costs and shit
 def quote_servers(index):
     min_cost = float('inf')
@@ -149,9 +150,11 @@ def process_actions():
                 data_left = float('inf')
                 f_data = ""
                 extra_data = ""
-                
+                recv_size = 1024
+
                 while data_left > 0:
                     data = sock.recv(1024)
+                    print(data)
                     if data:
                         data = data.decode()
                         if data_left == float('inf'):
@@ -159,14 +162,17 @@ def process_actions():
                             data_left = int(data[0])
                             data = ",".join(data[1:])
 
+                        # print("data : ", data)
+                        # print("len(data) : ", str(len(data)))
+                        # print("data_left : ", data_left)
                         # If this is true, some additional data was sent through.
+                        
                         if len(data) > data_left:
                             extra_data = data[data_left:]
                             data = data[:data_left]
                             data_left = 0
                         else:
                             data_left -= len(data)
-
                         f_data += data
 
                 f_data = f_data.split(",")
@@ -174,14 +180,19 @@ def process_actions():
                 data_stdout = int(f_data[1])
                 data_stderr = int(f_data[2])
                 data_fcount = int(f_data[3])
-
+                print("data_exitcode : ", data_exitcode)
+                print("data_stdout : ", data_stdout)
+                print("data_stderr : ", data_stderr)
+                print("data_fcount : ", data_fcount)
                 if data_exitcode != 0:
                     shit = True
 
                 if data_stdout == 1:
                     output, extra_data = read_data(sock, extra_data, False)
+                    
                     if data_stderr == 1:
                         output = "".join(output.rsplit('\n', output.count('\n')))
+                        
                     print("OUTPUT--> " + output)
 
                 if data_stderr == 1:
@@ -211,17 +222,18 @@ def read_data(sock, extra_data, is_file=True):
         if len(f_data) > data_left:
             extra_data = f_data[data_left:]
             f_data = f_data[:data_left]
+            
             data_left = 0
 
         else:
             extra_data = ""
             data_left -= len(f_data)
-
     while data_left > 0:
         data = sock.recv(1024)
         if data:
             data = data.decode()
             if data_left == float('inf'):
+
                 data = data.split(",")
                 data_left = int(data[0])
                 data = ",".join(data[1:])
@@ -232,7 +244,7 @@ def read_data(sock, extra_data, is_file=True):
                 data_left = 0
             else:
                 data_left -= len(data)
-
+            
             f_data += data
 
     #TODO: For debugging purposes.

@@ -129,7 +129,7 @@ struct sockinfo quote_servers(int index)
     struct sockinfo finalinfo;
     int connections [BUFFSIZE];
     float min_cost = INFINITY;
-    int valread;
+    int connection_num = 0;
     // for (int i = 0; i <= hosts[0][BUFFSIZE]; i++)
     for(size_t i = 0; i < sizeof(hosts) / sizeof(hosts[0]); i++)
     {
@@ -190,22 +190,34 @@ struct sockinfo quote_servers(int index)
                 concatenate_quote(message, quote, comma, hosts[i], port_string);
                 //printf("OUTGOING--> %s\n", message);
                 send(sock_socket , message, strlen(message) , 0 );
-                connections[i] = sock_socket;
+                connections[connection_num] = sock_socket;
+                connection_num++;
+                printf("OUTGOING-->");
             }
         }
         
     }
-    
-    int connections_index = 1;
-    while(connections[connections_index] != 0)
+
+    fd_set readfds;
+
+    int total_connections = connection_num;
+    while(connection_num > 0)
     {
         //printf("reached ig? - connec quote");
-        fd_set readfds;
-        struct timeval tv;
-        int retval;
         FD_ZERO(&readfds);
-        FD_SET(connections[connections_index], &readfds);
-        retval = select(connections[connections_index]+1, &readfds, NULL, NULL, &tv);
+        int max_fd = 0;
+
+            for(int i = 0; i < total_connections; i++)
+            {
+                if (connections[i] > 0) {
+                    FD_SET(connections[i], &readfds);
+                }
+                max_fd = (max_fd > connections[i]) ? max_fd : connections[i];
+            }
+
+        max_fd++;
+
+        int retval = select(max_fd, &readfds, NULL, NULL, NULL);
 
         if(retval == -1)
         {
@@ -214,85 +226,89 @@ struct sockinfo quote_servers(int index)
         }
         else if(retval >= 0)
         {
-            char buffer[1024] = {0};
-            valread = read(connections[connections_index], buffer, 1024);
-            if(valread == 0)
-            {
-                printf("Server is down\n");
-                connections[connections_index] = 0;
-            }
-            else
-            {
-                bool second_comma = false;
-                char* comma = ",";
-                int second_comma_index;
+            for (int i = 0; i < total_connections; i++) {
+                if(FD_ISSET(connections[i], &readfds) && connections[i] > 0) {
 
-                //retrieve the index of the second comma
-                for(int i = 0; i < strlen(buffer); i++)
-                {
-                    if(buffer[i] == comma[0])
+                    char buffer[1024] = {0};
+                    int valread = read(connections[i], buffer, 1024);
+
+                    if(valread == 0)
                     {
-                        if(second_comma)
+                        printf("Server is down\n");
+                        connections[i] = 0;
+                    }
+                    else
+                    {
+                        bool second_comma = false;
+                        char* comma = ",";
+                        int second_comma_index;
+
+                        //retrieve the index of the second comma
+                        for(int i = 0; i < strlen(buffer); i++)
                         {
-                            second_comma_index = i;
+                            if(buffer[i] == comma[0])
+                            {
+                                if(second_comma)
+                                {
+                                    second_comma_index = i;
+                                }
+                                second_comma = true;
+                            }
                         }
-                        second_comma = true;
+                        char*hostname = malloc(sizeof(char) * BUFFSIZE);
+                        char*port = malloc(sizeof(char) * 512);
+                        int first_comma_index = 0;
+                        for(int i = 0; i < strlen(buffer); i++)
+                        {
+                            if(buffer[i] == comma[0])
+                            {
+                                first_comma_index = i;
+                                break;
+                            }
+                        }
+
+                        //message e.g. "localhost,6238,90"
+                        //this will run from "localhost" --> first ","
+                        for(int i = 0; i < first_comma_index; i++)
+                        {
+                            hostname[i] = buffer[i];
+                        }
+                        hostname[first_comma_index] = '\0';
+
+                        //message e.g. "localhost,6238,90"
+                        //this will run from "6238" --> second ","
+                        for(int i = first_comma_index + 1; i < second_comma_index; i++)
+                        {
+                            port[i - first_comma_index - 1] = buffer[i];
+                        }
+                        port[second_comma_index - first_comma_index - 1] = '\0';
+                        quoteinfo.host = hostname;
+                        quoteinfo.port = atoi(port);
+
+                        //message e.g. "localhost,6238,90"
+                        //this will run from "90" --> end of string
+                        char* cost_string = malloc(sizeof(char) * BUFFSIZE);
+                        for(int i = second_comma_index; i < strlen(buffer); i++)
+                        {
+                            cost_string[i-second_comma_index] = buffer[i+1];
+                        }
+                        int cost = atoi(cost_string);
+
+                        if(cost < min_cost)
+                        {
+                            min_cost = cost;
+                            finalinfo.host = quoteinfo.host;
+                            finalinfo.port = quoteinfo.port;
+                        }
                     }
-                }
-                char*hostname = malloc(sizeof(char) * BUFFSIZE);
-                char*port = malloc(sizeof(char) * 512);
-                int first_comma_index = 0;
-                for(int i = 0; i < strlen(buffer); i++)
-                {
-                    if(buffer[i] == comma[0])
-                    {
-                        first_comma_index = i;
-                        break;
-                    }
-                }
-
-                //message e.g. "localhost,6238,90"
-                //this will run from "localhost" --> first ","
-                for(int i = 0; i < first_comma_index; i++)
-                {
-                    hostname[i] = buffer[i];
-                }
-                hostname[first_comma_index] = '\0';
-
-                //message e.g. "localhost,6238,90"
-                //this will run from "6238" --> second ","
-                for(int i = first_comma_index + 1; i < second_comma_index; i++)
-                {
-                    port[i - first_comma_index - 1] = buffer[i];
-                }
-                port[second_comma_index - first_comma_index - 1] = '\0';
-                quoteinfo.host = hostname;
-                quoteinfo.port = atoi(port);
-
-                //message e.g. "localhost,6238,90"
-                //this will run from "90" --> end of string
-                char* cost_string = malloc(sizeof(char) * BUFFSIZE);
-                for(int i = second_comma_index; i < strlen(buffer); i++)
-                {
-                    cost_string[i-second_comma_index] = buffer[i+1];
-                }
-                int cost = atoi(cost_string);
-
-                if(cost < min_cost)
-                {
-                    min_cost = cost;
-                    finalinfo.host = quoteinfo.host;
-                    finalinfo.port = quoteinfo.port;
+                    connections[i] = -1;
+                    connection_num--;
+                    shutdown(connections[i], SHUT_RDWR);
                 }
             }
         }
 
-        shutdown(connections[connections_index], SHUT_RDWR);
-        connections_index++;
-        if(connections[connections_index] == 0)
-        {
-            break;
-        }
+
     }
     // printf("finalinfo.host = %s\n", finalinfo.host);
     // printf("finalinfo.port = %d\n", finalinfo.port);
@@ -349,7 +365,6 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 
             max_fdata_length = strlen(f_data);
             //printf("max fdata length is set to %d\n",max_fdata_length);
-            free(extra_data);
             extra_data[strlen(f_data)];
 
 
@@ -388,7 +403,9 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
     {
         char buffer_data[BUFFSIZE] = { 0 };
         int valread;
-        valread = read(sock, buffer_data, BUFFSIZE);
+        //valread = read(sock, buffer_data, BUFFSIZE);
+        valread = recv(sock, buffer_data, BUFFSIZE, NULL);
+        printf("%BUFFER DATA!!!!!!!!!!!!%s", buffer_data);
         if(valread)
         {
             //printf("buffer data pre INFINITY check readdata: %s\n", buffer_data);
@@ -471,6 +488,8 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
     
     else
     {
+        printf("data left: %d", data_left);
+
         char*filename = malloc(sizeof(char) * strlen(f_data));
         char*data_to_write = malloc(sizeof(char) * strlen(f_data));
         int comma_index = 0;
@@ -487,13 +506,15 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
             filename[i] = f_data[i];
         }
         filename[comma_index] = '\0';
+        printf("filename: %s\n", filename);
 
         for(int i = comma_index + 1; i < strlen(f_data); i++)
         {
             data_to_write[i-comma_index-1] = f_data[i];
         }
         data_to_write[strlen(f_data)-comma_index-1] = '\0';
-        
+        printf("data: %s\n", data_to_write);
+
         FILE *fptr;
         fptr = fopen(filename, "w");
         fprintf(fptr, "%s", data_to_write);
@@ -508,7 +529,6 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 
 void process_actions()
 {
-    //printf("reached ig?");
     struct sockinfo info;
     bool shit = false;
     int connections[1024];
@@ -724,11 +744,10 @@ void process_actions()
 
                         for(int i = 0; i < data_fcount; i++)
                         {
-                            printf("keep going!\n");
-                            //extra_data = read_data(sock, extra_data, true, false);
+                            extra_data = read_data(connections[i], extra_data, true, false);
                         }
                         free(extra_data);
-                        shutdown(sock, SHUT_RDWR);
+                        shutdown(connections[i], SHUT_RDWR);
                         connections[i] = -1;
                         connection_num--;
                         printf("Remaining connections: %d\n",connection_num);
