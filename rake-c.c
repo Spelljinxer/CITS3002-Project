@@ -286,7 +286,7 @@ struct sockinfo quote_servers(int index)
                 }
             }
         }
-        
+
         shutdown(connections[connections_index], SHUT_RDWR);
         connections_index++;
         if(connections[connections_index] == 0)
@@ -652,7 +652,7 @@ void process_actions()
                         if (strlen(data) > data_left)
                         {                           
                             data_left = 0; //THIS HAS TO BE SOMEHOW FIXED IDK
-                        } 
+                        }
                         else 
                         {
                             data_left -= strlen(data);
@@ -697,10 +697,10 @@ void process_actions()
                         extra_data = read_data(sock, extra_data, true, false);
                     }
                     free(extra_data);
+                    shutdown(sock, SHUT_RDWR);
+                    connection_num--;
                 }
             }
-            shutdown(sock, SHUT_RDWR);
-            connection_num--;
             if(shit)
             {
                 printf("TERMINATED--> actionset %d\n", s_index+1);
