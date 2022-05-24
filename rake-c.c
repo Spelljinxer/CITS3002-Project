@@ -302,7 +302,7 @@ struct sockinfo quote_servers(int index)
 //---------------------------- READ_DATA() --------------------------------------------------
 char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
 {
-    float data_left = INFINITY;
+    int data_left = -1;
     char *f_data = calloc(strlen(extra_data),sizeof(char));
     //printf("extra_data pre execution: %s\n",extra_data);
     if(extra_data[0] != '\0')
@@ -323,7 +323,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
             data_left_placeholder[i] = extra_data[i];
         }
         data_left_placeholder[first_comma] = '\0';
-        data_left = atof(data_left_placeholder);
+        data_left = atoi(data_left_placeholder);
         for(int i = first_comma + 1; i < strlen(extra_data); i++)
         {
             f_data[i-first_comma-1] = extra_data[i];
@@ -384,7 +384,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
             data_left -= strlen(f_data);
         }
     }
-    while(data_left > 0)
+    while(data_left > 0 || data_left == -1)
     {
         char buffer_data[BUFFSIZE] = { 0 };
         int valread;
@@ -393,7 +393,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
         {
             //printf("buffer data pre INFINITY check readdata: %s\n", buffer_data);
             //printf("data left pre INFINITY check readdata: %f\n", data_left);
-            if(data_left == INFINITY)
+            if(data_left == -1)
             {
                 int first_comma_index = 0;
                 for(int i = 0; i < strlen(buffer_data); i++)
@@ -410,7 +410,7 @@ char *read_data(int sock, char*extra_data, bool is_File, bool is_Err)
                     data_left_placeholder[i] = buffer_data[i];
                 }
                 data_left_placeholder[first_comma_index] = '\0';
-                data_left = atof(data_left_placeholder);
+                data_left = atoi(data_left_placeholder);
                 //printf("data left during INFINITY readdata: %f\n", data_left);
                 char* buffer_data_copy = malloc(sizeof(char) * strlen(buffer_data));
                 for(int i = first_comma_index + 1; i < strlen(buffer_data); i++)
@@ -584,18 +584,24 @@ void process_actions()
             connections[a_index] = sock;
         }
 
+        fd_set readfds;
+
+        int total_connections = connection_num;
         while(connection_num > 0)
         {
-            fd_set readfds;
             FD_ZERO(&readfds);
             int max_fd = 0;
-            for(int i = 0; i < connection_num; i++)
+            for(int i = 0; i < total_connections; i++)
             {
-                FD_SET(connections[i], &readfds);
+                if (connections[i] > 0) {
+                    FD_SET(connections[i], &readfds);
+                }
                 max_fd = (max_fd > connections[i]) ? max_fd : connections[i];
             }
-            FD_SET(connections[0], &readfds);
-            int retval = select(max_fd + 1, &readfds, NULL, NULL, NULL);
+
+            max_fd++;
+
+            int retval = select(max_fd, &readfds, NULL, NULL, NULL);
             if(retval == -1)
             {
                 printf("ERROR: select()\n");
@@ -604,102 +610,130 @@ void process_actions()
             
             else if(retval >= 0)
             {
-                if(FD_ISSET(sock, &readfds))
-                {
-                    char buffer_in[BUFFSIZE] = {0};
-                    valread = read(connections[0], buffer_in, 1024);
-                    //printf("INCOMING<-- %s\n", buffer_in);
-                    int data_exitcode;
-                    int data_stdout;
-                    int data_stderr;
-                    int data_fcount;
-                    float data_left = INFINITY;
-                    char *data_left_placeholder = malloc(sizeof(char) * strlen(buffer_in));
-                    char*data = malloc(sizeof(char) * strlen(buffer_in));
-                    char* extra_data = calloc(strlen(buffer_in),sizeof(char));
-                    char*f_data = malloc(sizeof(char) * strlen(buffer_in));
-                    strcpy(data, buffer_in);
-                    //printf("INCOMING<-- %s\n", data);
-                    int first_comma_index = 0;
-                    for(int i = 0; i < strlen(buffer_in); i++)
+                for (int i = 0; i < total_connections; i++) {
+                    if(FD_ISSET(connections[i], &readfds) && connections[i] > 0)
                     {
-                        if(buffer_in[i] == ',')
+                        char buffer_in[BUFFSIZE] = {0};
+                        valread = read(connections[i], buffer_in, 1024);
+                        //printf("INCOMING<-- %s\n", buffer_in);
+                        int data_exitcode;
+                        int data_stdout;
+                        int data_stderr;
+                        int data_fcount;
+                        int data_left = -1;
+                        char *data_left_placeholder = malloc(sizeof(char) * strlen(buffer_in));
+                        char*data = malloc(sizeof(char) * strlen(buffer_in));
+                        char* extra_data = calloc(strlen(buffer_in),sizeof(char));
+                        char*f_data = malloc(sizeof(char) * strlen(buffer_in));
+                        strcpy(data, buffer_in);
+                        printf("INCOMING<-- %s\n", data);
+                        int first_comma_index = 0;
+                        for(int i = 0; i < strlen(buffer_in); i++)
                         {
-                            first_comma_index = i;
-                            break;
-                        }
-                    }
-                    while(data_left > 0) 
-                    {
-                        if (data_left == INFINITY) 
-                        {
-                            char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
-                            for (int i = 0; i < first_comma_index; i++) 
+                            if(buffer_in[i] == ',')
                             {
-                                data_left_placeholder[i] = data[i];
+                                first_comma_index = i;
+                                break;
                             }
-                            data_left_placeholder[first_comma_index] = '\0';
-                            data_left = atof(data_left_placeholder);
-
-                            char *data_placeholder = malloc(sizeof(char) * strlen(data));
-                            for (int i = first_comma_index + 1; i < strlen(data); i++) 
+                        }
+                        while(data_left > 0 || data_left == -1)
+                        {
+                            if (data_left == -1)
                             {
-                                data_placeholder[i - first_comma_index - 1] = data[i];
+                                char *data_left_placeholder = malloc(sizeof(char) * strlen(data));
+                                for (int i = 0; i < first_comma_index; i++)
+                                {
+                                    data_left_placeholder[i] = data[i];
+                                }
+                                data_left_placeholder[first_comma_index] = '\0';
+                                data_left = atoi(data_left_placeholder);
+
+                                char *data_placeholder = malloc(sizeof(char) * strlen(data));
+                                for (int i = first_comma_index + 1; i < strlen(data); i++)
+                                {
+                                    data_placeholder[i - first_comma_index - 1] = data[i];
+                                }
+                                data_placeholder[strlen(data) - first_comma_index - 1] = '\0';
+                                strcpy(data, data_placeholder);
                             }
-                            data_placeholder[strlen(data) - first_comma_index - 1] = '\0';
-                            strcpy(data, data_placeholder);
-                        }
-                        if (strlen(data) > data_left)
-                        {
-                            printf("data: %s",data);
-                            data_left = 0; //THIS HAS TO BE SOMEHOW FIXED IDK
-                        }
-                        else 
-                        {
-                            data_left -= strlen(data);
-                        }
-                        strcat(f_data, data);
-                    }
 
-                    struct comma_indices ci;
-                                
-                    int comma_index_one = init_comma_indices(f_data).comma_index_one;
-                    int comma_index_two = init_comma_indices(f_data).comma_index_two;
-                    int comma_index_three = init_comma_indices(f_data).comma_index_three;
+                            if (strlen(data) > data_left)
+                            {
+                                printf("data: %s\n",data);
+                                printf("data left: %d\n", data_left);
 
-                    data_exitcode = get_exit_code(f_data, comma_index_one);
-                    data_stdout = get_stdout(f_data, comma_index_one, comma_index_two);
-                    data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
-                    data_fcount = get_fcount(f_data, comma_index_three);
-                    
-                    
-                    // printf("data_exitcode: %d\n", data_exitcode);
-                    // printf("data_stdout: %d\n", data_stdout);
-                    // printf("data_stderr: %d\n", data_stderr);
-                    // printf("data_fcount: %d\n", data_fcount);
-                
-                    if(data_exitcode != 0)
-                    {
-                        shit = true;
+                                free(extra_data);
+                                extra_data = malloc((strlen(data)-data_left + 1)*sizeof(char));
+                                int data_left_new = strlen(data) - data_left;
+
+                                for(int x = 0;x < data_left_new; x++){
+                                    extra_data[x] = data[x + data_left];
+                                }
+
+                                char* new_data = malloc((data_left + 1 * sizeof(char)));
+                                for(int x = 0;x < data_left; x++){
+                                    new_data[x] = data[x];
+                                }
+                                free(data);
+                                data = malloc(sizeof(new_data));
+                                strcpy(data, new_data);
+                                data_left = 0;
+
+                                printf("data: %s\n", new_data);
+                                //THIS HAS TO BE SOMEHOW FIXED IDK
+                                printf("extra data: %s\n", extra_data);
+                            }
+                            else
+                            {
+                                data_left -= strlen(data);
+                            }
+                            strcat(f_data, data);
+                        }
+
+                        struct comma_indices ci;
+
+                        int comma_index_one = init_comma_indices(f_data).comma_index_one;
+                        int comma_index_two = init_comma_indices(f_data).comma_index_two;
+                        int comma_index_three = init_comma_indices(f_data).comma_index_three;
+
+                        data_exitcode = get_exit_code(f_data, comma_index_one);
+                        data_stdout = get_stdout(f_data, comma_index_one, comma_index_two);
+                        data_stderr = get_stderr(f_data, comma_index_two, comma_index_three);
+                        data_fcount = get_fcount(f_data, comma_index_three);
+
+
+                        // printf("data_exitcode: %d\n", data_exitcode);
+                        // printf("data_stdout: %d\n", data_stdout);
+                        // printf("data_stderr: %d\n", data_stderr);
+                        // printf("data_fcount: %d\n", data_fcount);
+
+                        if(data_exitcode != 0)
+                        {
+                            shit = true;
+                        }
+
+                        if(data_stdout == 1)
+                        {
+                            extra_data = read_data(connections[i], extra_data, false, false);
+                        }
+
+                        if(data_stderr == 1)
+                        {
+                            extra_data = read_data(connections[i], extra_data, false, true);
+                        }
+
+                        for(int i = 0; i < data_fcount; i++)
+                        {
+                            printf("keep going!\n");
+                            //extra_data = read_data(sock, extra_data, true, false);
+                        }
+                        free(extra_data);
+                        shutdown(sock, SHUT_RDWR);
+                        connections[i] = -1;
+                        connection_num--;
+                        printf("Remaining connections: %d\n",connection_num);
+
                     }
-                    
-                    if(data_stdout == 1)
-                    {
-                        extra_data = read_data(connections[0], extra_data, false, false);
-                    }
-                    
-                    if(data_stderr != 0)
-                    {
-                        extra_data = read_data(connections[0], extra_data, false, true);
-                    }
-                    
-                    for(int i = 0; i < data_fcount; i++)
-                    {
-                        extra_data = read_data(sock, extra_data, true, false);
-                    }
-                    free(extra_data);
-                    shutdown(sock, SHUT_RDWR);
-                    connection_num--;
                 }
             }
         }
