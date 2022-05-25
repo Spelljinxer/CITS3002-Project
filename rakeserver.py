@@ -19,6 +19,7 @@ sock.setblocking(0)
 process_count = 0
 action_list = []
 
+
 def run_action(data):
     global process_count
     process_count += 1
@@ -40,7 +41,7 @@ def run_action(data):
         command = Popen(data, shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = command.communicate()
         # Code that didn't get fully implemented due to time constraints.
-        #file_list = ['filename0.txt,file data','filename1.txt,file data','filename2.txt,file data']
+        # file_list = ['filename0.txt,file data','filename1.txt,file data','filename2.txt,file data']
 
         out, err = '0', '0'
         if stdout: out = '1'
@@ -57,7 +58,7 @@ def run_action(data):
         if stderr: send_data_with_size(client_socket, stderr.decode())
 
         # Sends the data contained within each file. (not implemented)
-        #send_batch_data_with_size(client_socket, file_list)
+        # send_batch_data_with_size(client_socket, file_list)
 
         # Ends the child process.
         os._exit(0)
@@ -97,25 +98,26 @@ def send_and_receive(sock):
     # Checks the incoming message's data type.
     # quote -> quotes the server for a cost value.
     # action -> executes an action on the server.
-    if (datatype == "quote"):
+    if datatype == "quote":
         # RECEIVES: "quote,hostname,portnum"
         # SENDS: "hostname,portnum,cost"
 
         # Generates a cost with a random value and appends it onto the host information.
         data = data + "," + str(random.randint(0,100))
         send_data(sock, data)
-    elif (datatype == "action"):
+    elif datatype == "action":
         action_list.append((sock,data))
 
     else:
         print("ERROR--> unknown data type.")
+
 
 keep_going = True
 while keep_going:
     try:
         c, address = sock.accept()
         if c is None:
-            print("Connection failed.")
+            print("Connection to a client failed.")
             keep_going = False
         print("CONNECTION--> ", address)
         send_and_receive(c)

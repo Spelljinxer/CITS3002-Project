@@ -6,29 +6,38 @@
 import socket
 import select
 #--------------------------------------------------------------------------------------------------------------
+
+# Initialises some variables.
 port = 0
 hosts = []
 actionsets = []
 
 
-# quotes servers for costs and shit
-def quote_servers(index):
+# Quotes all the stored hosts to find the minimum costing server.
+def quote_servers():
     min_cost = float('inf')
     connections = []
-    
+
+    # Iterates through every host, sending a quote message to each.
     for host in hosts:
         portnum = int(port)
 
+        # If the host has no port added onto it, the default port is set to it.
         if host.count(':') > 0:
             portnum = int(host.split(":")[1])
             host = host.split(":")[0]
 
+        # Connects to the host and sends a message.
         sock = socket.socket()
-        sock.connect((host, portnum))
+        try:
+            sock.connect((host, portnum))
 
-        message = "quote," + host + "," + str(portnum)
-        sock.sendall(message.encode())
-        connections.append(sock)
+            message = "quote," + host + "," + str(portnum)
+            sock.sendall(message.encode())
+            connections.append(sock)
+        except ConnectionRefusedError:
+            print("Connection to a host failed.")
+            exit(1)
 
     while connections:
         ready, empty, error = select.select(connections, [], connections)
@@ -113,13 +122,21 @@ def process_actions():
             if (action[0][:7] == "remote-"):
                 curraction = curraction[7:]
                 print("R-OUTGOING--> " + curraction)
-                sockinfo = quote_servers(a_index)
+                sockinfo = quote_servers()
                 sock = socket.socket()
-                sock.connect(sockinfo)
+                try:
+                    sock.connect(sockinfo)
+                except ConnectionRefusedError:
+                    print("Connection to a host failed.")
+                    quit(1)
             else:
                 print("OUTGOING--> " + curraction)
                 sock = socket.socket()
-                sock.connect(('localhost', int(port)))
+                try:
+                    sock.connect(('localhost', int(port)))
+                except ConnectionRefusedError:
+                    print("Connection to a host failed.")
+                    quit(1)
 
             # Data is sent to the connected socket and the socket is stored in a list of open connections.
             message = "action," + curraction
@@ -170,15 +187,12 @@ def process_actions():
 
                 if data_stdout == 1:
                     output, extra_data = read_data(sock, extra_data, False)
-
                     print("OUTPUT--> " + output)
                 else:
                     print("OUTPUT--> " + "None")
 
-
                 if data_stderr == 1:
                     output, extra_data = read_data(sock, extra_data, False)
-
                     print("ERROR--> " + output)
 
                 for files in range(0, data_fcount):
@@ -207,10 +221,10 @@ def read_data(sock, extra_data, is_file=True):
             f_data = f_data[:data_left]
             
             data_left = 0
-
         else:
             extra_data = ""
             data_left -= len(f_data)
+
     while data_left > 0:
         data = sock.recv(1024)
         if data:
