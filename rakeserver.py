@@ -8,22 +8,39 @@
 import socket, os, random
 from subprocess import Popen, PIPE
 
+# Initialises the socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-port = int(input("Input a port number to listen on: "))
-sock.bind(('', port))
+# Sets the port number to whatever number is input.
+try:
+    port = int(input("Input a port number to listen on: "))
+except ValueError:
+    print("A non-integer port number was entered.")
+    exit(1)
+
+# Binds the socket to the chosen port number.
+try:
+    sock.bind(('', port))
+except OSError:
+    print("The chosen port is already in use.")
+    exit(1)
 print("Listening on port " + str(port))
+
+# Sets blocking on the socket to false.
 sock.listen(10)
 sock.setblocking(0)
 
+# Initialises some variables.
 process_count = 0
 action_list = []
 
-
+# Runs the action input into the function. Takes in a socket and an action command in as a parameter, both of which are
+# stored in a signle tuple.
 def run_action(data):
     global process_count
     process_count += 1
 
+    # Gets the required data from the input data.
     client_socket = data[0]
     data = data[1]
 
@@ -32,17 +49,21 @@ def run_action(data):
     # out -> 1 if an output exists, err -> 1 if an error exists
     # SENDS: "message size,output" (if out = 1)
     # SENDS: "message size,error" (if err = 1)
-    # SENDS: "message size,filepath+name,filecontent" (for every file found, so far we just send 3 dummy files)
+    # SENDS: "message size,filepath+name,filecontent" (for every file found, this is not implemented)
 
+    # Forks the data into a new child process.
     print("\nEXECUTING--> " + data)
     pid = os.fork()
 
+    # Runs the command on the child process.
     if pid == 0:
+        # Sends the stdout and stderr into their respective variables.
         command = Popen(data, shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = command.communicate()
         # Code that didn't get fully implemented due to time constraints.
         # file_list = ['filename0.txt,file data','filename1.txt,file data','filename2.txt,file data']
 
+        # Sets the variables out/err to 1 if stdout/stderr exist.
         out, err = '0', '0'
         if stdout: out = '1'
         if stderr: err = '1'
@@ -73,8 +94,8 @@ def send_data(sock, data):
     sock.sendall(data.encode())
 
 
-# Sends a batch of data to the client with the datasize appended to the beginning of each individual message.
-# data_size,data is the format. (but with multiple messages appended to each other)
+# Sends data to the client with the datasize appended to the beginning of the message.
+# data_size,data is the format.
 def send_data_with_size(sock, data):
     if data[-1] == '\n':
         data = data[:-1]
@@ -86,12 +107,16 @@ def send_data_with_size(sock, data):
     sock.sendall(data.encode())
 
 
+# Checks any incoming data from a new client and processes it according to its data type.
 def send_and_receive(sock):
     global process_count
     global action_list
 
+    # Decodes the incoming data.
     data = sock.recv(1024).decode()
     print("INCOMING<-- ", data)
+
+    # Splits the data into its data type and data contents.
     datatype = data.split(",")[0]
     data = data.split(",", 1)[1]
 
@@ -105,28 +130,37 @@ def send_and_receive(sock):
         # Generates a cost with a random value and appends it onto the host information.
         data = data + "," + str(random.randint(0,100))
         send_data(sock, data)
+    # If data type is an action, append the socket and action onto the action list.
     elif datatype == "action":
         action_list.append((sock,data))
-
+    # If none of the data types match, an error occurred.
     else:
         print("ERROR--> unknown data type.")
 
 
+# Iterates forever unless a connection fails.
 keep_going = True
 while keep_going:
+    # Enters a try/except statement, where an error is thrown if there is no client available to be accepted.
     try:
         c, address = sock.accept()
         if c is None:
             print("Connection to a client failed.")
             keep_going = False
         print("CONNECTION--> ", address)
+        # Process the input data from the client.
         send_and_receive(c)
     except BlockingIOError:
+        # If processes are still being run, check if the process has already ended.
         if process_count > 0:
+            # -1 as the first parameter allows us to check all the child processes. os.WNOHANG prevents blocking.
             return_value = os.waitpid(-1, os.WNOHANG);
+            # If the value is not (0,0) a child process has ended.
             if return_value != (0, 0):
                 process_count -= 1
+                # If there are actions to be run, we run the popped action.
                 if len(action_list) > 0:
                     run_action(action_list.pop())
+        # If there are actions to be run, we run the popped action.
         elif len(action_list) > 0:
             run_action(action_list.pop())
