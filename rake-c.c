@@ -587,7 +587,7 @@ void process_actions()
                 memset(curraction, 0 , sizeof(curraction));
                 strcpy(curraction, remote_action);
 
-                printf("OUTGOING--> %s\n", curraction);
+                printf("R-OUTGOING--> %s\n", curraction);
                 info = quote_servers(s_index);                  //BECAUSE WE ARE REMOTE, WE QUOTE THE SERVERS FOR THE LOWEST COST
                 char*new_hostname = malloc(sizeof(char) * strlen(info.host));
                 strcpy(new_hostname, info.host);
@@ -597,7 +597,7 @@ void process_actions()
                 }
                 serv_addr.sin_port = htons(info.port);      //SEE: https://www.geeksforgeeks.org/socket-programming-cc, for socket connecting in C
                 sock = socket(AF_INET, SOCK_STREAM, 0);
-                inet_pton(AF_INET, "new_hostname", &serv_addr.sin_addr);
+                inet_pton(AF_INET, new_hostname, &serv_addr.sin_addr);
                 if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) //Connect
                 {
                     printf("\nConnection Failed\n");
@@ -607,7 +607,7 @@ void process_actions()
             }
             else
             {
-                printf("R-OUTGOING--> %s\n", curraction);
+                printf("OUTGOING--> %s\n", curraction);
                 serv_addr.sin_port = htons(portnumber);
                 sock = socket(AF_INET, SOCK_STREAM, 0);
                 inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);   //SEE: https://www.geeksforgeeks.org/socket-programming-cc, for socket connecting in C
