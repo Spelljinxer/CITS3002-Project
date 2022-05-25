@@ -36,21 +36,26 @@ def quote_servers():
             sock.sendall(message.encode())
             connections.append(sock)
         except ConnectionRefusedError:
+            # If a connection fails, exit the program with an error.
             print("Connection to a host failed.")
             exit(1)
 
+    # While connections remain, keep iterating to find costs from hosts.
     while connections:
         ready, empty, error = select.select(connections, [], connections)
 
+        # Iterates through every ready socket.
         for sock in ready:
             data = sock.recv(1024)
             if data:
                 data = data.decode().split(",")
 
-                sockinfo = (data[0],int(data[1]))
+                # Gets info from the received message. The message is in the form of "hostname,portnum,cost"
+                sockinfo = (data[0], int(data[1]))
                 cost = int(data[2])
 
-                if (cost < min_cost):
+                # If the found cost is under the minimum cost, store the new info.
+                if cost < min_cost:
                     min_cost = cost
                     min_sock = sockinfo
 
@@ -59,7 +64,7 @@ def quote_servers():
 
     return min_sock
 
-
+# Processes the rakefile, storing it into lists.
 def parse_rakefile():
     global port
     global hosts
@@ -101,7 +106,7 @@ def parse_rakefile():
                         actionnum = -1
                         actionsets.append([])
 
-
+# Processes the actions stored from the Rakefile.
 def process_actions():
     global port
     global hosts
@@ -118,12 +123,13 @@ def process_actions():
             curraction = action[0]
 
             # Executes non-remote actions on the localhost. Remote actions are executed on the lowest costing server,
-            # determined via quote_servers().
+            # The cost is determined via quote_servers().
             if (action[0][:7] == "remote-"):
                 curraction = curraction[7:]
                 print("R-OUTGOING--> " + curraction)
                 sockinfo = quote_servers()
                 sock = socket.socket()
+                # If a connection fails, the client exits with an error code of 1.
                 try:
                     sock.connect(sockinfo)
                 except ConnectionRefusedError:
@@ -134,6 +140,7 @@ def process_actions():
                 sock = socket.socket()
                 try:
                     sock.connect(('localhost', int(port)))
+                # If a connection fails, the client exits with an error code of 1.
                 except ConnectionRefusedError:
                     print("Connection to a host failed.")
                     quit(1)
@@ -157,25 +164,39 @@ def process_actions():
                 f_data = ""
                 extra_data = ""
 
+                # While data is left in the current message, keep receiving more data.
                 while data_left > 0:
                     data = sock.recv(1024)
 
+                    # If data exists, decode the data.
                     if data:
                         data = data.decode()
+
+                        # If data left is infinite, this is the first received data in the message.
+                        # Thus, the first comma-separated value is the size of the first part of the message.
                         if data_left == float('inf'):
+                            # Sets the data to whatever the remainder of the data after the data size value is.
                             data = data.split(",")
                             data_left = int(data[0])
                             data = ",".join(data[1:])
 
                         # If this is true, some additional data was sent through.
                         if len(data) > data_left:
+                            # Sets the extra data to whatever is after the original message.
                             extra_data = data[data_left:]
                             data = data[:data_left]
                             data_left = 0
                         else:
                             data_left -= len(data)
+
+                        # Increments found data onto the total f_data (final data).
                         f_data += data
 
+                # Splits the initial message into four values.
+                # data_exitcode is the commands exit code.
+                # data_stdout is 1 when stdout exists and 0 otherwise.
+                # data_stderr is 1 when stderr exists and 0 otherwise.
+                # data_fcount is the number of files that were returned. (file sending not fully implemented)
                 f_data = f_data.split(",")
                 data_exitcode = int(f_data[0])
                 data_stdout = int(f_data[1])
@@ -186,18 +207,22 @@ def process_actions():
                     error_found = True
 
                 if data_stdout == 1:
+                    # Reads additional messages from the same socket.
                     output, extra_data = read_data(sock, extra_data, False)
                     print("OUTPUT--> " + output)
                 else:
                     print("OUTPUT--> " + "None")
 
                 if data_stderr == 1:
+                    # Reads additional messages from the same socket.
                     output, extra_data = read_data(sock, extra_data, False)
                     print("ERROR--> " + output)
 
+                # File reading was not fully implemented.
                 for files in range(0, data_fcount):
                     extra_data = read_data(sock, extra_data)
 
+                # Closes the current socket and removes it from the open connections list.
                 sock.close()
                 connections.remove(sock)
 
@@ -206,29 +231,35 @@ def process_actions():
             print("\nTERMINATED--> actionset " + str(s_index + 1) + " returned errors")
             break
 
-
+# Reads more data from a socket, whilst also taking in any prior extra data from previous reads.
 def read_data(sock, extra_data, is_file=True):
     data_left = float('inf')
     f_data = ""
 
+    # If extra data is input, process it.
     if extra_data:
+        # Find the data left from the first comma-separated value.
         extra_data = extra_data.split(",")
         data_left = int(extra_data[0])
         f_data = ",".join(extra_data[1:])
 
+        # If the received data once again exceeds the data required, the new excess is stored in extra data again.
         if len(f_data) > data_left:
             extra_data = f_data[data_left:]
             f_data = f_data[:data_left]
             
             data_left = 0
+        # If not, the extra data is set to an empty string - indicating that more data can be received from the socket.
         else:
             extra_data = ""
             data_left -= len(f_data)
 
+    # If there is still data to retrieve from the socket, receive more data.
     while data_left > 0:
         data = sock.recv(1024)
         if data:
             data = data.decode()
+            # The same processes occur as the ones that occurred within the earlier read data calls.
             if data_left == float('inf'):
 
                 data = data.split(",")
@@ -244,6 +275,8 @@ def read_data(sock, extra_data, is_file=True):
             
             f_data += data
 
+    # If the data is not a file, return it. If not, write the data to a file.
+    # (file writing is implemented but there is no implementation of server's sending files to clients)
     if not is_file: return f_data, extra_data
     else:
         f_data = f_data.split(",")
@@ -253,6 +286,6 @@ def read_data(sock, extra_data, is_file=True):
         print("FILE--> " + f_data[0])
         return extra_data
 
-
+# Runs the methods required to process the Rakefile and its stored actions.
 parse_rakefile()
 process_actions()
