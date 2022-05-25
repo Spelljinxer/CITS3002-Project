@@ -25,11 +25,5 @@ Project Description:
   python3 rakeserver.py
   ```
   
-<!-- Could update this with more links for the future -->
-# Useful Links idk
-[Socket Programming in C](https://www.geeksforgeeks.org/socket-programming-cc/) <br>
-[Socket Programming in Python](https://www.geeksforgeeks.org/socket-programming-python/) <br>
-
-
 queen
 <img src="https://static.wikia.nocookie.net/hoducks/images/d/d8/Herrscher_of_Flamescion.png/revision/latest?cb=20210930042045">
