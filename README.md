@@ -1,4 +1,4 @@
-# CITS3002-Project
+# CITS3002-Project - submitted 5% late lol
 <p align="center">
   <b> <h1>HIMEKO KILLED BY KIANA HOV?</h1></b><br>
   <img src="https://github.com/Spelljinxer/CITS3002-Project/blob/main/.idea/inspectionProfiles/herrscher-of-the-void-kiana (1).gif" | width=900><br>
@@ -25,33 +25,6 @@ Project Description:
   python3 rakeserver.py
   ```
   
-<!-- UPDATE THIS AS WE GO ALONG-->
-# Task List
-- [x] Parsing Rakefile - Python Client 
-- [x] Parsing Rakefile - C Client
-- [ ] Optimize C Client (realocation of size exceeding) (fuck C)
-- [x] Start of rakeserver
-- [x] Rake clients contact rakeserver
-- [x] Support Multiple Instances of rake
-- [x] Exchange meaningful commands and responses
-- [x] Execute Simple Actions on rakeserver
-- [x] Dynamic recv() sizing
-- [x] Receive errors and terminate on error
-- [x] Send requirements to server for basic cost implementation
-- [x] Redo entire sending of data process.
-- [x] Send stderr to clients to print
-- [ ] Have the server check if any new files were created, if so send them back to the user.
-- [x] Implement sending files back to the user (separate from sending command outputs).
-- [ ] Implement sending files to the server (server requires recv code)
-- [ ] Perform Compiliation and Linking
-- [X] Test two-tabbed lines that are only a comment w/ C and Python.
-- [ ] Check if the python TODOs are fine.
-- [ ] Refactor code on Python
-- [ ] Complete C code
-- [ ] Refactor C code
-- [ ] Catch errors
-- [ ] Complete report
-
 <!-- Could update this with more links for the future -->
 # Useful Links idk
 [Socket Programming in C](https://www.geeksforgeeks.org/socket-programming-cc/) <br>
