@@ -24,20 +24,26 @@
 
 char buffer[BUFFSIZE];
 
-int total_lines = 0;
-int total_actionset_count = 0;
-int total_actions_count = 0;
-int longest_requirements_line = 0;
-int host_length = 0;
-
 //-----------------------------------------------------------------------------------------------------
 
+/**
+ * @brief Struct is used to contain the position of three commas
+ *  Used when the server returns data regarding the exticode, stdout, stderr
+ * 
+ */
 struct comma_indices{
     int comma_index_one;
     int comma_index_two;
     int comma_index_three;
-};
+};  
 
+/**
+ * @brief finds the position of three commas in the string 
+ * e.g. ("0,1,0,3") returns {0,1,3,4}
+ * 
+ * @param fdata 
+ * @return struct comma_indices with the position of each index
+ */
 struct comma_indices init_comma_indices(char *fdata)
 {
     struct comma_indices ci;
@@ -65,6 +71,13 @@ struct comma_indices init_comma_indices(char *fdata)
     return ci;
 }
 
+/**
+ * @brief Get the exit code which lies before the first comma
+ * 
+ * @param f_data 
+ * @param comma_index_one 
+ * @return int the position of the exitcode in the string
+ */
 int get_exit_code(char *f_data, int comma_index_one)
 {
     char *data_exitcode_hold = malloc(strlen(f_data) + 1);
@@ -77,6 +90,14 @@ int get_exit_code(char *f_data, int comma_index_one)
     free(data_exitcode_hold);
     return exit_code;
 }
+/**
+ * @brief Get the stdout which lies between the first and second comma
+ * 
+ * @param f_data 
+ * @param comma_index_one 
+ * @param comma_index_two 
+ * @return int the position of stdout in the string
+ */
 
 int get_stdout(char *f_data, int comma_index_one, int comma_index_two)
 {
@@ -90,6 +111,14 @@ int get_stdout(char *f_data, int comma_index_one, int comma_index_two)
     free(data_stdout_hold);
     return stdout_code;
 }
+/**
+ * @brief Get the stderr which lies between the second and third comma
+ * 
+ * @param f_data 
+ * @param comma_index_two 
+ * @param comma_index_three 
+ * @return int the position of stderr in the string
+ */
 
 int get_stderr(char *f_data, int comma_index_two, int comma_index_three)
 {
@@ -103,6 +132,14 @@ int get_stderr(char *f_data, int comma_index_two, int comma_index_three)
     free(data_stderr_hold);
     return stderr_code;
 }
+
+/**
+ * @brief Get the fcount which lies after the third comma to the end of the string
+ * 
+ * @param f_data 
+ * @param comma_index_three 
+ * @return int the position of fcount in the string
+ */
 
 int get_fcount(char *f_data, int comma_index_three)
 {
@@ -137,7 +174,7 @@ bool starts_with(const char *a, const char *b)
 }
 /**
  * @brief checks for white space in str and removes it if it exists, returns str with whitespace removed
- * 
+ *  See: https://stackoverflow.com/questions/122616/how-do-i-trim-leading-trailing-whitespace-in-a-standard-way
  * @param str 
  * @return str with whitespace removed
  */
