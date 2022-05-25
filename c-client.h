@@ -118,33 +118,55 @@ int get_fcount(char *f_data, int comma_index_three)
 }
 
 //-------------------------------------------------------------------------------------------------------------
-bool StartsWith(const char *a, const char *b)
+
+/**
+ * @brief simply checks if the string starts with another string
+ * 
+ * @param a 
+ * @param b 
+ * @return true if it does start with b
+ * @return false otherwise
+ */
+bool starts_with(const char *a, const char *b) 
 {
-    if(strncmp(a, b, strlen(b)) == 0) return 1;
+    if(strncmp(a, b, strlen(b)) == 0) 
+    {
+        return 1;
+    }
     return 0;
 }
-
-char *trimwhitespace(char *str)
+/**
+ * @brief checks for white space in str and removes it if it exists, returns str with whitespace removed
+ * 
+ * @param str 
+ * @return str with whitespace removed
+ */
+ 
+char *trim_whitespace(char *str) 
 {
     char *end;
 
-    // Trim leading space
     while(isspace((unsigned char)*str)) str++;
 
-    if(*str == 0)  // All spaces?
+    if(*str == 0)
         return str;
 
-    // Trim trailing space
     end = str + strlen(str) - 1;
     while(end > str && isspace((unsigned char)*end)) end--;
 
-    // Write new null terminator character
     end[1] = '\0';
 
     return str;
 }
 
-int char_counter(char *str, char* delim)
+/**
+ * @brief counts the number time delim appears and returns the count
+ * 
+ * @param str 
+ * @param delim
+ * @return int count of delim in str 
+ */
+int char_counter(char *str, char* delim) 
 {
     int count = 0;
     for (int i = 0; i < strlen(str); i++)
@@ -155,14 +177,27 @@ int char_counter(char *str, char* delim)
     return count;
 }
 
-char* get_first_seven_chars(char *s)
+/**
+ * @brief returns a string containing the first seven characters of s
+ * 
+ * @param s 
+ * @return char* result of seven characters
+ */
+char* get_first_seven_chars(char *s) //returns a string containing the first seven characters of s
 {
     char *result = malloc(sizeof(char) * 7);
     strncpy(result, s, 7);
     return result;
 }
 
-char *concatenate_strings(char *s1, char *s2)
+/**
+ * @brief //returns a string containing s1 and s2 (in that order)
+ * 
+ * @param s1 
+ * @param s2
+ * @return char* result of s1 and s2
+ */
+char *concatenate_strings(char *s1, char *s2) 
 {
     char *result = malloc(sizeof(char) * (strlen(s1) + strlen(s2) + 1));
     strcpy(result, s1);
@@ -170,41 +205,16 @@ char *concatenate_strings(char *s1, char *s2)
     return result;
 }
 
-
-void test_socket_address(char* hostname, struct sockaddr_in serv_ddr)
-{
-    if (inet_pton(AF_INET, hostname, &serv_ddr.sin_addr) <= 0)
-    {
-        printf("\nInvalid address/ Address not supported \n");
-        exit(1);
-    }
-}
-
-void test_socket_connecton(int socket, struct sockaddr_in server)
-{
-    if(connect(socket, (struct sockaddr *)&server, sizeof(server)) < 0)
-    {
-        printf("Could not connect to server\n");
-        exit(1);
-    }
-    // else
-    // {
-    //     printf("Connected to server\n");
-    // }
-}
-
-int test_client_fd(int client_fd, int sock, struct sockaddr_in serv_addr, size_t serv_size, int portnumber)
-{
-    client_fd = connect(sock, (struct sockaddr*)&serv_addr, serv_size);
-    if(client_fd < 0)
-    {
-        printf("Connection Failed\n");
-        return -1;
-    }
-    return client_fd;
-}
-
-void concatenate_quote(char* message, char* quote, char*comma, char*hostname, char*port)
+/**
+ * @brief returns a modified message containing quote + hostname and port separated by a comma
+ * 
+ * @param message = message to be modified ""
+ * @param quote = quote to be added to message "Quote"
+ * @param comma = comma to be added between hostname and port ","
+ * @param hostname = hostname to be added to message "localhost"
+ * @param port = port number to be added to message "6239"
+ */
+void concatenate_quote(char* message, char* quote, char*comma, char*hostname, char*port) 
 {
     strcpy(message, quote);
     strcat(message, hostname);
@@ -212,15 +222,13 @@ void concatenate_quote(char* message, char* quote, char*comma, char*hostname, ch
     strcat(message, port);
 }
 
-char *splice_string(char* string, int start, int end)
-{
-    char *result = malloc(sizeof(char) * (end - start + 1));
-    strncpy(result, &string[start], end - start);
-    result[end - start] = '\0';
-    return result;
-}
-
-int get_number_of_elements(char ** arr)
+/**
+ * @brief returns the number of chars in arr
+ * 
+ * @param arr
+ * @return int i count of elements
+ */
+int get_number_of_elements(char ** arr) 
 {
     int i = 0;
     while(arr[i] != NULL)
@@ -229,8 +237,14 @@ int get_number_of_elements(char ** arr)
     }
     return i;
 }
-
-int get_char_index(char *str, int delim)
+/**
+ * @brief returns the index of the first occurrence of delim inside of str
+ * 
+ * @param str 
+ * @param delim 
+ * @return int first occurrence index of delim inside of str
+ */
+int get_char_index(char *str, int delim) 
 {
     int first_occurence = 0;
     while(str[first_occurence] != delim)
@@ -239,7 +253,6 @@ int get_char_index(char *str, int delim)
     }
     return first_occurence;
 }
-
 
 //---------------------------------------------------
 
