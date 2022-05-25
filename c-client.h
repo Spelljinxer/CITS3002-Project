@@ -256,6 +256,12 @@ int get_char_index(char *str, int delim)
 
 //---------------------------------------------------
 
+/*
+* @brief each line of rakefile, removes comments, counts number of total lines, actions and actionsets, dynamically allocates buffersize
+* @param rakefile the rakefile
+* @return if rakefile unreadable exit(1) 
+*/
+
 void extract_line_data(char *rakefile)
 {
     FILE *fp;
