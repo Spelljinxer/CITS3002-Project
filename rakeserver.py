@@ -35,7 +35,7 @@ process_count = 0
 action_list = []
 
 # Runs the action input into the function. Takes in a socket and an action command in as a parameter, both of which are
-# stored in a signle tuple.
+# stored in a single tuple.
 def run_action(data):
     global process_count
     process_count += 1
