@@ -1,5 +1,0 @@
-Daivik Anil 22987816
-Nathan Eden 22960674
-Reiden Rufin 22986337
-
-Operating System Used: Linux (Ubuntu 20.0.04 LTS) ran within a WSL
