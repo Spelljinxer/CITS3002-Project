@@ -1,9 +1,5 @@
 /**
  *  CITS3002 2022 Sem 1 - Project - rake client C
- * @authors
- *  - Hidden for Privacy.
- *  - Hidden for Privacy.
- *  - Hidden for Privacy.
  */
 
 #include <stdio.h>
