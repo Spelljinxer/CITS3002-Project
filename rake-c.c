@@ -1,9 +1,9 @@
 /**
  *  CITS3002 2022 Sem 1 - Project - rake client C
  * @authors
- *  - Daivik Anil 22987816
- *  - Nathan Eden 22960674
- *  - Reiden Rufin 22986337
+ *  - Hidden for Privacy.
+ *  - Hidden for Privacy.
+ *  - Hidden for Privacy.
  */
 
 #include <stdio.h>
