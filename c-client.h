@@ -1,9 +1,5 @@
 /**
  *  CITS3002 2022 Sem 1 - Project - Header File for the C client
- * @authors
- *  - Hidden for Privacy.
- *  - Hidden for Privacy.
- *  - Hidden for Privacy.
  */
 
 #include <stdlib.h>
