@@ -1,9 +1,9 @@
 /**
  *  CITS3002 2022 Sem 1 - Project - Header File for the C client
  * @authors
- *  - Daivik Anil 22987816
- *  - Nathan Eden 22960674
- *  - Reiden Rufin 22986337
+ *  - Hidden for Privacy.
+ *  - Hidden for Privacy.
+ *  - Hidden for Privacy.
  */
 
 #include <stdlib.h>
