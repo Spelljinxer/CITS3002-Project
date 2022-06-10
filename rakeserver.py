@@ -1,8 +1,4 @@
 # CITS3002 2022 Sem 1 - Project - rakeserver
-# authors
-#   - Hidden for Privacy.
-#   - Hidden for Privacy.
-#   - Hidden for Privacy.
 #--------------------------------------------------------------------------
 
 import socket, os, random
