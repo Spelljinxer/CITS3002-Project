@@ -1,7 +1,7 @@
 # CITS3002-Project - submitted 5% late lol
 <p align="center">
   <b> <h1>HIMEKO KILLED BY KIANA HOV?</h1></b><br>
-  <img src="https://github.com/Spelljinxer/CITS3002-Project/blob/main/.idea/inspectionProfiles/herrscher-of-the-void-kiana (1).gif" | width=900><br>
+  <img src="https://github.com/Spelljinxer/CITS3002-Project/blob/main/herrscher-of-the-void-kiana.gif" | width=900><br>
 </p>
 
 Project Description:
