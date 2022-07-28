@@ -28,7 +28,7 @@ Project Description:
 queen
 <img src="https://static.wikia.nocookie.net/hoducks/images/d/d8/Herrscher_of_Flamescion.png/revision/latest?cb=20210930042045">
 
-<p align="center">
+<p align="center"> 
   <b> <h1> self plugging my designs for storage les go</h1></b><br>
   <img src="https://github.com/Spelljinxer/CITS3002-Project/blob/main/images/yukino wallpaper edit.png" | width=850><br>
   <img src="https://github.com/Spelljinxer/CITS3002-Project/blob/main/images/MIO NEW.png" | width=850><br>
