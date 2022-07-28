@@ -4,7 +4,7 @@
   <img src="https://github.com/Spelljinxer/CITS3002-Project/blob/main/images/herrscher-of-the-void-kiana (1).gif" | width=900><br>
 </p>
 
-Project Description:
+Project Description: 
 > Develop a internetworked application that compiles and links C programs across different computers connected using internet protocols.
 # Team Members:
 [Sckaeth](https://github.com/Sckaeth) <br>
